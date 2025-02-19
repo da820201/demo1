@@ -2,7 +2,6 @@ import datetime
 import time
 import logging
 from DrissionPage import common, ChromiumPage, Chromium
-from conf import picture_save_path, all_friend_url
 from functions import encrypt_fun
 from schemes import video_schemes, general_schemes
 

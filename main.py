@@ -4,7 +4,6 @@ import logging
 from functions.fb_function import check_has_login_and_registry_button, check_uid, go_to_videos_page, go_to_post_page, go_to_reels_page
 from DrissionPage import ChromiumOptions
 from DrissionPage import common, Chromium
-from conf import is_mute
 from schemes.es_db_scjemes import es, index_name
 
 
@@ -16,7 +15,7 @@ logging.basicConfig(
 
 
 co = ChromiumOptions()
-co.mute(is_mute)
+co.mute(True)
 c = Chromium(addr_or_opts=co)
 tab = c.latest_tab
 
