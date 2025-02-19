@@ -1,0 +1,41 @@
+# Click the Variables button, above, to create your own variables.
+GET _cat/health
+
+GET ${exampleVariable1} // _search
+{
+  "query": {
+    "${exampleVariable2}": {} // match_all
+  }
+}
+
+PUT jieba_index
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_ana": {
+          "tokenizer": "jieba_index",
+          "filter": [
+            "lowercase"
+          ]
+        }
+      }
+    }
+  }
+}
+
+GET fb_posts/_search?q=阿湯哥
+GET fb_posts/_search?q=Test
+
+PUT fb_posts/_doc/d2f74b4e7ca6b3cb9b9187eae03e9a84f02f9ee53078eaa0496affa95d70dc95
+{
+  "describe": "Test"
+}
+
+GET fb_posts/_search
+{
+  "query":
+  {
+    "match_all": {}
+  }
+}

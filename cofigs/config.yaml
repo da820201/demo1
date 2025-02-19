@@ -1,0 +1,18 @@
+redis:
+  host: 127.0.0.1
+  port: 6379
+  user:
+  password:
+  db: 2
+sql:
+  host: 127.0.0.1
+  port: 3307
+  user: root
+  password: rootpassword
+  db: mydatabase
+es:
+  protocol: http
+  host: 127.0.0.1
+  port: 9200
+  user: elastic
+  password: changeme
