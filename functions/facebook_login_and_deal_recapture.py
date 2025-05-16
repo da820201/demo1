@@ -15,6 +15,8 @@ from DrissionPage import common, ChromiumPage, Chromium
 from DrissionPage import ChromiumOptions
 from bs4 import BeautifulSoup
 from fcaptcha.twocaptcha import TwoCaptcha
+from functions.utils import try_loops, aes_decrypt, aes_encrypt
+from functions.meta_account_function import get_sf_account, create_sf_account, generate_uid
 
 ConfigManager.read_yaml(rf"./configs/config.yaml")
 picture_save_path = ConfigManager.server.social_midia.fb.recapture.picture_save_path
@@ -259,7 +261,11 @@ def deal_recapture_page(email, tab_: ChromiumPage.get_tab, micro_timeout: float 
     return True
 
 
-def login_and_get_cookies(_email, _password, timeout: float = 5):
+def login_and_get_cookies(
+        _email,
+        _password,
+        timeout: float = 5
+):
     co = ChromiumOptions()
     co.mute(True)
     co.set_pref(
@@ -274,22 +280,24 @@ def login_and_get_cookies(_email, _password, timeout: float = 5):
 
     c = Chromium(addr_or_opts=co)
     tab = c.latest_tab
-    page_ = login(email=_email, password=_password, tab_=tab)
+    accounts = get_sf_account(_email)
+    page_ = login(email=accounts.account, password=aes_decrypt(accounts.password), tab_=tab)
     if is_in_recapture_page(tab, timeout=timeout):
-        deal_recapture_page(email=_email, tab_=tab, timeout=timeout)
+        deal_recapture_page(email=accounts.account, tab_=tab, timeout=timeout)
     time.sleep(5)
-    logging.info(f"Cookies: {page_.cookies().as_str()}")
-    print(page_.cookies().as_json())
+    cookies = page_.cookies().as_json()
+    if cookies:
+        logging.info(f"Cookies: {cookies}")
+    else:
+        raise Exception("no cookies")
     dtsg_ = get_fb_dtsg(page_.cookies().as_str())
 
-    account = old_db_schemes.DBShellAccount(
-        id=0,
-        account=_email,
-        password=_password,
-        cookies_str=page_.cookies().as_str(),
-        fb_dtsg=dtsg_
-    )
-    return account
+    accounts.social_medias.facebook.cookies_str = cookies
+    accounts.social_medias.facebook.dtsg = dtsg_
+    accounts.social_medias.facebook.update_time = time.time()
+    accounts.save()
+
+    return accounts
 
 
 def switch_to_target_page(page_index, timeout: float = 5):
