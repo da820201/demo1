@@ -72,7 +72,7 @@ def update_sf_account(
     current = get_sf_account(account=account)
     if not current:
         raise ValueError("Account not found")
-    # 用 dict 更新原模型
+    # 更新原模型
     updated = merge_models(current, data)
     updated.update_time = time.time()
     updated.save()

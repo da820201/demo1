@@ -16,11 +16,10 @@ from DrissionPage import ChromiumOptions
 from bs4 import BeautifulSoup
 from fcaptcha.twocaptcha import TwoCaptcha
 
-
 ConfigManager.read_yaml(rf"./configs/config.yaml")
 picture_save_path = ConfigManager.server.social_midia.fb.recapture.picture_save_path
 _email = "daniel.guan@shell.fans"
-_password = "983B0ca2"
+_password = ""
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 api_key = os.getenv('APIKEY_2CAPTCHA', '6d99c583d898aed9fc01e95fed325ced')
 solver = TwoCaptcha(api_key)
