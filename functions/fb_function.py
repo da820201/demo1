@@ -1,9 +1,14 @@
 import datetime
+import json
+import requests
 import time
 import logging
+from bs4 import BeautifulSoup
 from DrissionPage import common, ChromiumPage, Chromium
 from functions import encrypt_fun
 from schemes import video_schemes, general_schemes
+from functions.utils import find_value
+
 
 friend_data_by_name = {}
 friend_data = {}
@@ -282,3 +287,52 @@ def go_to_reels_page(chromium: Chromium, account: str, get_reels_count: int = 10
         return result
     logging.info("not in target uid page")
     return False
+
+
+def check_pages(url_info):
+    fb_pages_headers = {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-Mode": "navigate",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15",
+        "Accept-Language": "en-US,en;q=0.9",
+        # "Accept-Encoding": "gzip, deflate, br",  # Need without Accept-Encoding，if have this will recv no data
+        "Sec-Fetch-Dest": "document",
+        "Priority": "u=0, i",
+        "cookie": url_info['cookie_str'] #  shellfans manager account
+    }
+    url = "https://www.facebook.com/pages/"
+    params = {
+        "category": "your_pages",
+        "ref": "bookmarks"
+    }
+    res = requests.get(url, headers=fb_pages_headers, params=params).text
+
+    soup = BeautifulSoup(res, 'html.parser')
+    # 提取出每个<script>标签中的JSON内容
+    madan = {}
+    for tag in soup.find_all('script', {'type': 'application/json'}):
+        json_content = tag.string
+        # 将JSON字符串转换为Python字典
+        json_data = json.loads(json_content)
+        if 'additional_profiles_with_biz_tools' in json_content:
+            madan = json_data
+            break
+
+    fz_list = find_value(madan, "additional_profiles_with_biz_tools")
+    # print(fz_list)
+    passed = 0
+    try:
+        for item in fz_list['edges']:
+            print('当前管理的粉丝专页：', item['node']['id'], item['node']['name'])
+            if str(url_info['u_id']) == str(item['node']['id']):
+                passed = 1
+                logging.info(f"粉专管理员权限验证通过啦~")
+                mysql_duo.update_sql('db_url', {"zhua": 1}, {"id": url_info['id']})
+
+                logging.info(f"请手动切换 [{url_info['user_id']}]{url_info['nickname']} 账号，到 [id={url_info['id']}]{url_info['url']} 为管理员，并手动更新db_url表的fans_cookie", 1)
+                break
+    except:
+        logging.info(f"[{url_info['user_id']}]{url_info['nickname']} 账号掉线了", 1)
+    if passed == 0:
+        logging.info('目标账号管理的粉专不包括被抓url，说明对方还没将账号设置成管理员')

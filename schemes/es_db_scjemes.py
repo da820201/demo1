@@ -2,7 +2,7 @@ from elasticsearch import Elasticsearch
 from functions.config_manager import ConfigManager
 
 
-ConfigManager.read_yaml(rf"C:\Users\da820\PycharmProjects\pythonProject3\cofigs\config.yaml")
+ConfigManager.read_yaml(rf"./cofigs/config.yaml")
 index_name = "fb_posts"
 es = Elasticsearch(
     [f"{ConfigManager.es.protocol}://{ConfigManager.es.host}:{ConfigManager.es.port}"],  # Elasticsearch 服務的 URL
