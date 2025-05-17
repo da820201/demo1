@@ -1,18 +1,5 @@
 import datetime
 import time
-import cv2
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.image as img
-from PIL import Image
-from keras.utils import img_to_array
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder
-from sklearn.model_selection import train_test_split
-from keras.models import Sequential
-from keras.layers import Activation, MaxPooling2D, Flatten, Conv2D, Dropout, Dense
-from sklearn.svm import SVC
-from sklearn import metrics
 from DrissionPage import common, ChromiumPage
 
 
