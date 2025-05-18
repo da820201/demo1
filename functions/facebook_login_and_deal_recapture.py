@@ -1,4 +1,3 @@
-import datetime
 import time
 import logging
 import json
@@ -6,24 +5,18 @@ import requests
 import sys
 import os
 from functions.utils import find_value
-# from function import predictor
 from schemes import old_db_schemes
-from functions.config_manager import ConfigManager
-from DrissionPage import common, ChromiumPage, Chromium
+from DrissionPage import ChromiumPage, Chromium
 from DrissionPage import ChromiumOptions
 from bs4 import BeautifulSoup
 from fcaptcha.twocaptcha import TwoCaptcha
-from functions.utils import try_loops, aes_decrypt, aes_encrypt
-from functions.meta_account_function import get_sf_account, create_sf_account, generate_uid
-from data.account_data import email_, password_
+from functions.utils import aes_decrypt
+from functions.meta_account_function import get_sf_account
+from data.account_data import picture_save_path, api_key
 
-
-# ConfigManager.read_yaml(rf"L:\demo1\configs")
-# picture_save_path = ConfigManager.server.social_midia.fb.recapture.picture_save_path
-picture_save_path = rf"L:\demo1\data\f_p"
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-api_key = os.getenv('APIKEY_2CAPTCHA', '6d99c583d898aed9fc01e95fed325ced')
+api_key = os.getenv(api_key["env"], api_key["key"])
 solver = TwoCaptcha(api_key)
 
 logging.basicConfig(
@@ -35,12 +28,11 @@ logging.basicConfig(
 recapture_url = "https://www.facebook.com/captcha/tfbimage/"
 page_url = "https://www.facebook.com/pages/"
 
-# def print_background_package(tab_: ChromiumPage.get_tab):
-#     for packet in tab_.listen.steps():
-#         response = packet.response
-#         url = packet.url
-#         if recapture_url in url:
-#             update_friend_data(response.body)
+
+def print_background_package(tab_: ChromiumPage.get_tab):
+    for packet in tab_.listen.steps():
+        response = packet.response
+        url = packet.url
 
 
 def check_is_facebook_page_manager(
