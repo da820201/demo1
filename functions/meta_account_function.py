@@ -2,12 +2,10 @@ import time
 import redis
 from functions.utils import aes_encrypt, aes_decrypt, generate_uid, aes_encrypt
 from schemes.sf_account_schemes import SFMetaAccount, SocialMedias, Facebook, Instagram, Threads, UpdateSocialMedias,UpdateInstagram, UpdateSFMetaAccount
-from schemes.fans_schemes import FansSchemes
 from pydantic import BaseModel
 
 
 def create_sf_account(
-        redis_server: redis.Redis,
         account: str,
         password: str,
         facebook: Facebook = None,
@@ -16,7 +14,6 @@ def create_sf_account(
 ):
     encrypted_pw = aes_encrypt(password)
     uid = generate_uid(account=account)
-    fb_uid = generate_uid(account=account)
     data = SFMetaAccount(
         uid=uid,
         account=account,
@@ -24,7 +21,7 @@ def create_sf_account(
         social_medias=SocialMedias(
             uid=uid,
             facebook=Facebook(
-                uid=fb_uid,
+                uid=uid,
                 name=account
             ) if facebook is None else facebook,
             instagram=instagram,
@@ -32,7 +29,7 @@ def create_sf_account(
         )
     )
 
-    data.save(redis_server)
+    data.save()
 
 
 def get_sf_account(
@@ -81,8 +78,8 @@ def update_sf_account(
 
 if __name__ == "__main__":
     r = redis.Redis(host="localhost", port=6380, db=0, decode_responses=True)
-    account_ = "kalibasagunaanacondapython@gmail.com"
-    password_ = ""
+    from data.account_data import account_, password_
+
     partial_update = UpdateSFMetaAccount(
         password=aes_encrypt(password_),
         social_medias=UpdateSocialMedias(

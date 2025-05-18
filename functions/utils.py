@@ -1,24 +1,17 @@
 import logging
 import time
 import json
-import typing
-import os
 import base64
 import hashlib
-import pydantic
 import requests
 import orjson
 import redis
 from typing import Optional
 from pydantic import BaseModel
-from redis.commands.json.path import Path
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.backends import default_backend
-
-
-AES_KEY = b"hallo_this_is_32_byt_key_for_AES"  # 必須是 32 bytes（256 bit）
-AES_IV = b"this_is_16byteIV"
+from data.account_data import AES_KEY, AES_IV
 
 
 logging.basicConfig(
@@ -85,7 +78,6 @@ def load_lua_script(redis_server: redis.Redis, script_path: str = "./data/set_wi
 
 
 def aes_encrypt(plaintext: str) -> str:
-    print(len(AES_KEY))
     padder = padding.PKCS7(128).padder()
     padded_data = padder.update(plaintext.encode()) + padder.finalize()
     cipher = Cipher(algorithms.AES(AES_KEY), modes.CBC(AES_IV), backend=default_backend())

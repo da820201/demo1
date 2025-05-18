@@ -50,7 +50,6 @@ class Instagram(EmbeddedJsonModel):
         global_key_prefix: str = "sf_account_instagram"
 
 
-
 class Threads(EmbeddedJsonModel):
     uid: Optional[str] = Field(index=True, primary_key=True)
     name: Optional[str] = Field(index=True)
@@ -74,7 +73,7 @@ class SocialMedias(EmbeddedJsonModel):
         database = redis
 
 
-class SFMetaAccount(JsonModel):
+class SFMetaAccount(JsonModel, index=True):
     uid: str = Field(index=True, primary_key=True)
     account: str = Field(index=True)
     password: str

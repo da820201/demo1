@@ -1,7 +1,4 @@
-import datetime
-import time
 import logging
-import json
 import requests
 import sys
 import os
@@ -10,23 +7,19 @@ import redis
 import platform
 import random
 import string
-from redis_om import Migrator
-from redis_om import get_redis_connection
-from schemes.sf_account_schemes import SFMetaAccount, SocialMedias, Facebook, Instagram, Threads
+from schemes.sf_account_schemes import SFMetaAccount, Instagram
 from functions.meta_account_function import get_sf_account, create_sf_account, generate_uid
 from functions.utils import try_loops, aes_decrypt, aes_encrypt
-from functions.config_manager import ConfigManager
-from DrissionPage import common, ChromiumPage, Chromium
+from DrissionPage import ChromiumPage, Chromium
 from DrissionPage import ChromiumOptions
 from fcaptcha.twocaptcha import TwoCaptcha
+from data.account_data import api_key, email_
+from data.account_data import main_path, account_, password_
 
 
-# ConfigManager.read_yaml(rf"./configs/config.yaml")
-# picture_save_path = ConfigManager.server.social_midia.fb.recapture.picture_save_path
-_email = "daniel.guan@shell.fans"
-_password = ""
+_email = email_
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-api_key = os.getenv('APIKEY_2CAPTCHA', '6d99c583d898aed9fc01e95fed325ced')
+api_key = os.getenv(api_key["env"], api_key["key"])
 solver = TwoCaptcha(api_key)
 
 logging.basicConfig(
@@ -75,12 +68,6 @@ down_header = {
 }
 
 
-
-account_ = ""
-password_ = ""
-main_path = "/Users/shellfans-/PycharmProjects/demo1/data"
-
-
 def download_head_pic(
         pic_url,
         max_retry=5
@@ -103,7 +90,7 @@ def download_head_pic(
     else:
         file_path = f"{main_path}/ig_head_pics/{time.strftime('%Y%m%d')}"
     if not os.path.exists(file_path):
-        os.mkdir(file_path)
+        os.makedirs(file_path, exist_ok=True)
     a_path = f"{file_path}/{file_name}.png"
     with open(a_path, "wb") as fp:
         fp.write(html1)
@@ -233,25 +220,18 @@ def logout(
         micro_timeout: float = 0.25
 ) -> bool:
     more_box_class = "html-span xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x1hl2dhg x16tdsg8 x1vvkbs x4k7w5x x1h91t0o x1h9r5lt x1jfb8zj xv2umb2 x1beo9mf xaigb6o x12ejxvf x3igimt xarpa2k xedcshv x1lytzrv x1t2pt76 x7ja8zs x1qrby5j"
-    # 更多的選項，不知道為什麼有機會出現兩組參數。
-    more_box_aria_type_a = "«r1a»"
-    more_box_aria_type_b = "«Rmreillkqbrj5ipd5aq»"
-    more_box = (
-        tab_.wait.ele_displayed(
-            f"@@class={more_box_class}@@aria-describedby={more_box_aria_type_a}", timeout=timeout
-        ), tab_.wait.ele_displayed(
-            f"@@class={more_box_class}@@aria-describedby={more_box_aria_type_b}", timeout=timeout
-        )
+
+    more_box = tab_.wait.ele_displayed(
+        f"@@class={more_box_class}", timeout=timeout
     )
-    if not any(more_box):
-        print(more_box)
+
+    if not more_box:
         logging.info("no more box")
         return False
 
-    for i in more_box:
-        if i:
-            more_box = i
-            break
+    more_box = tab_.eles(
+        f"@@class={more_box_class}", timeout=timeout
+    )[-1]
 
     more_button_class = "x9f619 x3nfvp2 xr9ek0c xjpr12u xo237n4 x6pnmvc x7nr27j x12dmmrz xz9dl7a xn6708d xsag5q8 x1ye3gou x80pfx3 x159b3zp x1dn74xm xif99yt x172qv1o x10djquj x1lhsz42 xzauu7c xdoji71 x1dejxi8 x9k3k5o xs3sg5q x11hdxyr x12ldp4w x1wj20lx x1lq5wgf xgqcy7u x30kzoy x9jhf4c"
     more_box.ele(f"@@class={more_button_class}").click()
@@ -306,7 +286,7 @@ def login_for_cookies(
 
 def get_followers(
         cookies,
-        target_uid: str="6770296405",  # "5951385086"
+        target_uid: str = "6770296405",  # "5951385086"
         timeout: float = 5
 ):
     plate = 2  # 2: Instagram
@@ -363,7 +343,6 @@ if __name__ == '__main__':
     create_sf_account(
         account=account_,
         password=aes_encrypt(password_),
-        redis_server=r,
         instagram=Instagram(
             uid=generate_uid(account=account_),
             name=account_,

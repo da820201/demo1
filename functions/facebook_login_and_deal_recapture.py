@@ -15,12 +15,13 @@ from bs4 import BeautifulSoup
 from fcaptcha.twocaptcha import TwoCaptcha
 from functions.utils import try_loops, aes_decrypt, aes_encrypt
 from functions.meta_account_function import get_sf_account, create_sf_account, generate_uid
+from data.account_data import email_, password_
+
 
 # ConfigManager.read_yaml(rf"L:\demo1\configs")
 # picture_save_path = ConfigManager.server.social_midia.fb.recapture.picture_save_path
 picture_save_path = rf"L:\demo1\data\f_p"
-_email = "daniel.guan@shell.fans"
-_password = ""
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 api_key = os.getenv('APIKEY_2CAPTCHA', '6d99c583d898aed9fc01e95fed325ced')
 solver = TwoCaptcha(api_key)

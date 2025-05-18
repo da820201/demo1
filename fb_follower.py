@@ -43,14 +43,12 @@ all_url = [
 if __name__ == '__main__':
     redis_server = redis.Redis(
         host='127.0.0.1',
-        port=6379,
+        port=6380,
         db=0,
         decode_responses=True
     )
 
     # TODO 雖然解掉了 Recapture1 的驗證，但有可能遇到 Recapture2 的驗證，這還需要想辦法處理。
-    redis_name = "shellfans_fb_manager_account"
-    email_ = "daniel.guan@shell.fans"
     data = facebook_login_and_deal_recapture.login_and_get_cookies(
         email_,
         _password=pd,
