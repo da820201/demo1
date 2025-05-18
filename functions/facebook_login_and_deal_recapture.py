@@ -5,8 +5,6 @@ import json
 import requests
 import sys
 import os
-import cv2
-import pytesseract
 from functions.utils import find_value
 # from function import predictor
 from schemes import old_db_schemes
@@ -18,8 +16,9 @@ from fcaptcha.twocaptcha import TwoCaptcha
 from functions.utils import try_loops, aes_decrypt, aes_encrypt
 from functions.meta_account_function import get_sf_account, create_sf_account, generate_uid
 
-ConfigManager.read_yaml(rf"./configs/config.yaml")
-picture_save_path = ConfigManager.server.social_midia.fb.recapture.picture_save_path
+# ConfigManager.read_yaml(rf"L:\demo1\configs")
+# picture_save_path = ConfigManager.server.social_midia.fb.recapture.picture_save_path
+picture_save_path = rf"L:\demo1\data\f_p"
 _email = "daniel.guan@shell.fans"
 _password = ""
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -219,21 +218,6 @@ def is_in_recapture_page(tab_: ChromiumPage.get_tab, timeout: float = 5) -> bool
 
         return True
     return False
-
-
-def run_ocr(file_path: str) -> str:
-    image = cv2.imread(file_path)
-    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    _, threshold_image = cv2.threshold(gray_image, 150, 255, cv2.THRESH_BINARY)
-    cv2.imshow("winname", mat=threshold_image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    # 使用 Tesseract 進行 OCR
-    config = r"--oem 1 --psm 6"
-    text = pytesseract.image_to_string(threshold_image, config=config)
-
-    return text
 
 
 def resolve_text_captcha(_path: str) -> str:

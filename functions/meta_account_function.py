@@ -39,7 +39,8 @@ def get_sf_account(
         account: str,
         decrypt: bool = True
 ) -> SFMetaAccount:
-    data = SFMetaAccount.get(generate_uid(account=account))
+    uid = generate_uid(account=account)
+    data = SFMetaAccount.get(uid)
     if decrypt:
         data.password = aes_decrypt(data.password)
 
@@ -81,7 +82,7 @@ def update_sf_account(
 if __name__ == "__main__":
     r = redis.Redis(host="localhost", port=6380, db=0, decode_responses=True)
     account_ = "kalibasagunaanacondapython@gmail.com"
-    password_ = "983b0ca2"
+    password_ = ""
     partial_update = UpdateSFMetaAccount(
         password=aes_encrypt(password_),
         social_medias=UpdateSocialMedias(

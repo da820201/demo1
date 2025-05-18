@@ -1,4 +1,3 @@
-import datetime
 import time
 from redis_om import (
     EmbeddedJsonModel,
@@ -123,6 +122,7 @@ class UpdateSFMetaAccount(JsonModel):
     class Meta:
         database = redis
         global_key_prefix: str = "sf_meta_account"
+
 
 Migrator().run()
 
