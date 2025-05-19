@@ -10,7 +10,7 @@ from DrissionPage import ChromiumPage, Chromium
 from DrissionPage import ChromiumOptions
 from bs4 import BeautifulSoup
 from fcaptcha.twocaptcha import TwoCaptcha
-from functions.utils import aes_decrypt
+from functions.utils import aes_decrypt, get_fb_dtsg
 from functions.meta_account_function import get_sf_account
 from data.account_data import picture_save_path, api_key
 
@@ -86,60 +86,6 @@ def check_is_facebook_page_manager(
         logging.info('目标账号管理的粉专不包括被抓url，说明对方还没将账号设置成管理员')
 
     return index_
-
-
-def get_fb_dtsg(cookie_str):
-    retry_times = 3
-    followers_url = f"https://www.facebook.com/"
-    putong_headers = {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        "Accept-Language": "en,zh-CN;q=0.9,zh;q=0.8,zh-TW;q=0.7",
-        "Cache-Control": "max-age=0",
-        "Dpr": "2",
-        "Priority": "u=0, i",
-        "Sec-Ch-Prefers-Color-Scheme": "light",
-        "Sec-Ch-Ua": "\"Google Chrome\";v=\"125\", \"Chromium\";v=\"125\", \"Not.A/Brand\";v=\"24\"",
-        "Sec-Ch-Ua-Full-Version-List": "\"Google Chrome\";v=\"125.0.6422.176\", \"Chromium\";v=\"125.0.6422.176\", \"Not.A/Brand\";v=\"24.0.0.0\"",
-        "Sec-Ch-Ua-Mobile": "?0",
-        "Sec-Ch-Ua-Model": "\"\"",
-        "Sec-Ch-Ua-Platform": "\"macOS\"",
-        "Sec-Ch-Ua-Platform-Version": "\"14.5.0\"",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
-        "Upgrade-Insecure-Requests": "1",
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-        "Viewport-Width": "1260",
-        "Cookie": cookie_str
-    }
-
-    # 根據帳號的cookie_str取得 fb_dtsg 參數，重試retry_times次
-    for i in range(1, retry_times):
-        logging.info(f"第 {i} 次根據帳號的cookie_str取得 fb_dtsg 參數")
-        try:
-            res = requests.get(url=followers_url, headers=putong_headers).text
-            break
-        except requests.RequestException as e:
-            sl_time = i * 2 + 1
-            logging.info(f"第 {i} 次請求失敗：{e}，{sl_time} 秒後重試")
-            time.sleep(sl_time)
-    else:
-        raise Exception(f"{retry_times} 次重試都失敗了，需要重新執行登入腳本")
-
-    logging.info("拿到數據，準備解析獲取fb_dtsg")
-    soup = BeautifulSoup(res, 'html.parser')
-    madan = {}
-    for tag in soup.find_all('script', {'type': 'application/json'}):
-        json_content = tag.string
-        json_data = json.loads(json_content)
-        if 'FBInteractionTracingDependencies' in json_content:
-            madan = json_data
-            break
-
-    fb_dtsg = find_value(madan, "token")
-    logging.info(f"取得fb_dtsg：{fb_dtsg} \n")
-    return fb_dtsg
 
 
 def check_has_login_and_registry_button(tab_: ChromiumPage.get_tab, timeout: float = 5) -> bool:

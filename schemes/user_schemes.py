@@ -1,10 +1,11 @@
 import datetime
 import time
+from schemes.follower_schemes import FollowerFacebook, FollowerInstagram, FollowerThreads
+from schemes.sf_account_schemes import SFMetaAccount
 from redis_om import (
     EmbeddedJsonModel,
     JsonModel,
     Field,
-    Migrator,
     get_redis_connection
 )
 
@@ -21,25 +22,38 @@ class ScapyStatus(Enum):
     Waiting = 2
 
 
-class FacebookGroup(EmbeddedJsonModel):
+class UserFacebookGroup(JsonModel, index=True):
     uid: Optional[str] = Field(index=True, primary_key=True)
     name: Optional[str] = Field(index=True)
+    group_id: Optional[str] = None
     scapy_status: Optional[int] = 0
+    is_allow_crawler: Optional[bool] = 0  # 該Group是否與許爬蟲訪問
+    allow_crawlers: Optional[list[str]] = []  # 允許的爬蟲名單
+    members: Optional[list[str]] = []  # 社團成員
+    num_of_members: Optional[int] = 0  # 社團人數
+    posts: Optional[list] = []  # 社團貼文
+    num_of_posts: Optional[int] = 0  #  社團貼文數
     cookies_str: Optional[str] = None
     create_time: Optional[float] = Field(default_factory=lambda: time.time())
     update_time: Optional[float] = Field(default_factory=lambda: time.time())
 
     class Meta:
         database = redis
-        global_key_prefix: str = "sf_user_facebook_group"
+        global_key_prefix: str = "user_facebook_group"
 
 
-class FacebookPage(EmbeddedJsonModel):
+class UserFacebookPage(JsonModel, index=True):
     uid: Optional[str] = Field(index=True, primary_key=True)
     name: Optional[str] = Field(index=True)
+    page_id: Optional[str] = None
+    dtsg: Optional[str] = None
     profile_url: Optional[str] = None
     head_pic_url: Optional[str] = None
-    followers: Optional[list[str]] = []
+    allow_crawlers: Optional[list[str]] = []  # 允許的爬蟲名單
+    followers: Optional[list[str]] = []  # 粉絲專頁追蹤者
+    num_of_followers: Optional[int] = 0  # 粉絲專頁追蹤者數
+    posts: Optional[list] = []  # 粉絲專頁貼文
+    num_of_posts: Optional[int] = 0  # 粉絲專頁貼文數
     scapy_status: Optional[int] = 0
     cookies_str: Optional[str] = None
     create_time: Optional[float] = Field(default_factory=lambda: time.time())
@@ -47,67 +61,72 @@ class FacebookPage(EmbeddedJsonModel):
 
     class Meta:
         database = redis
-        global_key_prefix: str = "sf_user_facebook_page"
+        global_key_prefix: str = "user_facebook_page"
 
 
-class Facebook(EmbeddedJsonModel):
-    dtsg: Optional[str] = None
+class UserFacebook(JsonModel, index=True):
     uid: Optional[str] = Field(index=True, primary_key=True)
     name: Optional[str] = Field(index=True)
+    fb_id: Optional[str] = None
     profile_url: Optional[str] = None
-    pages: Optional[list[FacebookPage]] = None
-    groups: Optional[list[FacebookGroup]] = None
-    cookies_str: Optional[str] = None
+    head_pic_url: Optional[str] = None
+    pages: Optional[list[str]] = None
+    groups: Optional[list[str]] = None
     create_time: Optional[float] = Field(default_factory=lambda: time.time())
     update_time: Optional[float] = Field(default_factory=lambda: time.time())
 
     class Meta:
         database = redis
-        global_key_prefix: str = "sf_user_facebook"
+        global_key_prefix: str = "user_facebook"
 
 
-class Instagram(EmbeddedJsonModel):
+class UserInstagram(JsonModel, index=True):
+    uid: Optional[str] = Field(index=True, primary_key=True)
+    ig_id: Optional[str] = None
+    name: Optional[str] = Field(index=True, default=None)
+    scapy_status: Optional[int] = 0
+    is_allow_crawler: Optional[bool] = 0  # 該IG是否與許爬蟲訪問
+    allow_crawlers: Optional[list[str]] = []  # 允許的爬蟲名單
+    followers: Optional[list[str]] = []  # 追蹤者名單
+    num_of_followers: Optional[int] = 0  # 追蹤者數
+    courses: Optional[list] = []
+    create_time: Optional[float] = Field(default_factory=lambda: time.time())
+    update_time: Optional[float] = Field(default_factory=lambda: time.time())
+
+    class Meta:
+        database = redis
+        global_key_prefix: str = "user_instagram"
+
+
+
+class UserThreads(JsonModel, index=True):
     uid: Optional[str] = Field(index=True, primary_key=True)
     name: Optional[str] = Field(index=True)
-    account: Optional[str] = Field(index=True, default=None)
-    password: Optional[str] = None
-    from_fb: Optional[bool] = True
     scapy_status: Optional[int] = 0
-    cookies_str: Optional[str] = None
+    is_allow_crawler: Optional[bool] = 0   # 該Threads是否與許爬蟲訪問
+    allow_crawlers: Optional[list[str]] = []  # 允許的爬蟲名單
+    followers: Optional[list[str]] = []  # 追蹤者名單
+    num_of_followers: Optional[int] = 0  # 追蹤者數
     create_time: Optional[float] = Field(default_factory=lambda: time.time())
     update_time: Optional[float] = Field(default_factory=lambda: time.time())
 
     class Meta:
         database = redis
-        global_key_prefix: str = "sf_account_instagram"
+        global_key_prefix: str = "user_threads"
 
 
-
-class Threads(EmbeddedJsonModel):
-    uid: Optional[str] = Field(index=True, primary_key=True)
-    name: Optional[str] = Field(index=True)
-    scapy_status: Optional[int] = 0
-    cookies_str: Optional[str] = None
-    create_time: Optional[float] = Field(default_factory=lambda: time.time())
-    update_time: Optional[float] = Field(default_factory=lambda: time.time())
-
-    class Meta:
-        database = redis
-        global_key_prefix: str = "sf_account_threads"
-
-
-class UserAccount(JsonModel):
+class UserAccount(JsonModel, index=True):
     uid: str = Field(index=True, primary_key=True)
     account: str = Field(index=True)
     password: str
-    facebook: Optional[list[Facebook]] = None
-    instagram: Optional[list[Instagram]]  = None
-    threads: Optional[list[Threads]] = None
-    birthday: Optional[datetime.date]
+    facebook: Optional[list[str]] = None
+    instagram: Optional[list[str]]  = None
+    threads: Optional[list[str]] = None
+    birthday: Optional[float] = Field(default_factory=lambda: time.time())
     phone_number: Optional[str]
     create_time: Optional[float] = Field(default_factory=lambda: time.time())
     update_time: Optional[float] = Field(default_factory=lambda: time.time())
 
     class Meta:
         database = redis
-        global_key_prefix: str = "sf_meta_account"
+        global_key_prefix: str = "user"

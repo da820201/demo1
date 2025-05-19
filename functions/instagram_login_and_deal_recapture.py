@@ -4,17 +4,19 @@ import sys
 import os
 import time
 import redis
-import platform
 import random
-import string
+import re
+from urllib.parse import parse_qs
+from bs4 import BeautifulSoup
 from schemes.sf_account_schemes import SFMetaAccount, Instagram
+from schemes.follower_schemes import FollowerInstagram
 from functions.meta_account_function import get_sf_account, create_sf_account, generate_uid
-from functions.utils import try_loops, aes_decrypt, aes_encrypt
+from functions.utils import try_loops, aes_decrypt, aes_encrypt, download_head_pic
 from DrissionPage import ChromiumPage, Chromium
 from DrissionPage import ChromiumOptions
 from fcaptcha.twocaptcha import TwoCaptcha
 from data.account_data import api_key, email_
-from data.account_data import main_path, account_, password_
+from data.account_data import account_, password_
 
 
 _email = email_
@@ -51,50 +53,6 @@ headers = {
     "X-Ig-Www-Claim": "hmac.AR1lJHcc0gF0WSQS_kos2-kfKhxzkKnKkqCYkIhfqzqppOXa",
     "X-Requested-With": "XMLHttpRequest"
 }
-down_header = {
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-    "Accept-Encoding": "gzip, deflate, br, zstd",
-    "Accept-Language": "zh-CN,zh;q=0.9",
-    "Priority": "u=0, i",
-    "Sec-Ch-Ua": "\"Microsoft Edge\";v=\"125\", \"Chromium\";v=\"125\", \"Not.A/Brand\";v=\"24\"",
-    "Sec-Ch-Ua-Mobile": "?0",
-    "Sec-Ch-Ua-Platform": "\"Windows\"",
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "none",
-    "Sec-Fetch-User": "?1",
-    "Upgrade-Insecure-Requests": "1",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0"
-}
-
-
-def download_head_pic(
-        pic_url,
-        max_retry=5
-):
-    for i in range(1, max_retry):
-        try:
-            file_content = requests.get(url=pic_url, headers=down_header)
-            break
-        except requests.RequestException as e:
-            sleep_time = i * 2 + 1
-            logging.info(f"請求 {i} 次請求崩潰：{e}，{sleep_time} 秒後重試")
-            time.sleep(sleep_time)
-            pass
-    else:
-        raise Exception("5次重試均失敗")
-    html1 = file_content.content
-    file_name = ''.join(random.sample(string.ascii_letters + string.digits, 12))
-    if platform.system() == "Darwin":
-        file_path = f"{main_path}/ig_head_pics/{time.strftime('%Y%m%d')}"
-    else:
-        file_path = f"{main_path}/ig_head_pics/{time.strftime('%Y%m%d')}"
-    if not os.path.exists(file_path):
-        os.makedirs(file_path, exist_ok=True)
-    a_path = f"{file_path}/{file_name}.png"
-    with open(a_path, "wb") as fp:
-        fp.write(html1)
-    return a_path.replace(f"{main_path}/ig_head_pics", ".")
 
 
 def try_cookies(
@@ -284,12 +242,77 @@ def login_for_cookies(
     return tab.cookies().as_str()
 
 
+def get_user_id(
+        cookies,
+        username: str,
+        timeout: float = 5
+):
+    profile_url = f"https://www.instagram.com/{username}/"
+    headers["Cookie"] = cookies
+    result = requests.get(url=profile_url, headers=headers).text
+
+    # 使用BS4解析
+    soup = BeautifulSoup(result, "html.parser")
+    scripts = soup.find_all("script")
+    for script in scripts:
+        if script.string and ('profile_id' in script.string):
+            try:
+                # 嘗試直接從中擷取 profile_id
+                match = re.search(r'"profile_id"\s*:\s*"(\d+)"', script.string)
+                if match:
+                    return match.group(1)
+            except Exception as e:
+                continue
+
+    return None
+
+def extract_fb_dtsg_from_html(html: str) -> str | None:
+    # 嘗試從 <input name="fb_dtsg" value="..."> 或 script 中提取
+    match = re.search(r'name="fb_dtsg"\s+value="([^"]+)"', html)
+    if match:
+        return match.group(1)
+    match = re.search(r'"fb_dtsg"\s*:\s*"([^"]+)"', html)
+    if match:
+        return match.group(1)
+    return None
+
+def get_fb_dtsg(
+        cookies: str,
+        username: str
+) -> str | None:
+    url = f"https://www.instagram.com/{username}/?__a=1&__d=dis"
+    headers["Cookie"] = cookies
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        try:
+            data = response.json()
+            return data["graphql"]["user"]["edge_followed_by"]["count"]
+        except Exception as e:
+            print("解析錯誤:", e)
+    else:
+        print("請求失敗:", response.status_code)
+    return None
+
+
+def get_ig_user_info(
+        cookies,
+        uid,
+        timeout=5
+):
+    headers["Cookie"] = cookies
+    payload = f"av=17841474347125111&__d=www&__user=0&__a=1&__req=1a&__hs=20227.HYP%3Ainstagram_web_pkg.2.1...1&dpr=2&__ccg=EXCELLENT&__rev=1022957439&__s=smucnh%3Aimq43g%3Aw1vpw0&__hsi=7506036922928637977&__dyn=7xeUjG1mxu1syUbFp41twpUnwgU7SbzEdF8aUco2qwJxS0DU2wx609vCwjE1EE2Cw8G11wBz81s8hwGxu786a3a1YwBgao6C0Mo2swtUd8-U2zxe2GewGw9a361qwuEjUlwhEe87q0oa2-azqwt8d-2u2J0bS1LwTwKG1pg2fwxyo6O1FwlA3a3zhA6bwIxeUnAwHxW1oxe6UaU3cyUC4o16UswFw&__csr=jjgvT7gR3Yt5N58kSyIRljAfFll8OERelqCheQArpe_KlWjgFamnQjnhAOaQ-Zvh6EGhe8HBjFd4jiGHGjJ3ax2ZbACGj-i_8UF1efyGK_DVRXz98ZkmF98yFHD-GBKjF5GbhZ5CCB-EC9UHBgKqi9y9UG5ooxeAmqeUxa8DGRXg01iUU1g920fB04dJwyfDgGOwbK0WyambgkU2mDgd86OaChUO4U4q3C4O0867E0WG05q80x63i0i-1PyFGwDwE8TeUiwFA9a6o2JgaFQ0sfe0iQyx90rVA0HUcRg2mw1Vp02n949g062y0dHw60w0LDw&__hsdp=geXA4h4PiTk9GMyJ3W2M_AISOkAk4BmwhgV2QBFy9k8iOe2lb20We40pxgux2bwsO4wIzU-6ok9AoswNoKh3oryfwyxu3SQ4y3U4i2GfxO6EO3268gx-68KEmwaSEnwio3gwrU3LwibwcO0h-1lUswNwgU8E5O1oxa0Co1vS7o7a362S3pwQw921i-2uexS4o8o4aexe5zw&__hblp=0mUvwBxu7onwIgao6N3UpBUnwcq4QbzUgBAJ0RzomwMwxwzCGq16gkybCxa8yfzEjxt0xxle2mi9gyEbqyUrypqwAzUO2maghBx27UngKGyEycwhoC1gGqmawipE39wRwVwTw962m18K0KoCtwh87Sm1lByEuwBUswNwGxyUuwn8qwQy8iw9C0ZE6a9xJBxu2Z0gocoG2a6osod88WxS1bAx-2W2Gegsx66GK2jz8WejgS5zK&__comet_req=7&fb_dtsg=NAftilM-2UH6osDDeAPJlLKco1FiKdwRj-U9gxxg689eV393EqPJlSA%3A17843683195144578%3A1747633494&jazoest=26096&lsd=9v5jNVzlz9uzviLGT6-0zc&__spin_r=1022957439&__spin_b=trunk&__spin_t=1747635408&__crn=comet.igweb.PolarisProfilePostsTabRoute&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=PolarisProfilePageContentQuery&variables=%7B%22id%22%3A%22{uid}%22%2C%22render_surface%22%3A%22PROFILE%22%7D&server_timestamps=true&doc_id=9661599240584790"
+    user_info_url = "https://www.instagram.com/graphql/query"
+    payload = {k: v[0] for k, v in parse_qs(payload).items()}
+    response = requests.post(user_info_url, headers=headers, data=payload)
+    payload["__spin_t"] = f"{int(time.time())}"
+    payload["fb_dtsg"] = get_fb_dtsg(cookies, "kalibapy3")
+
+
 def get_followers(
         cookies,
         target_uid: str = "6770296405",  # "5951385086"
         timeout: float = 5
 ):
-    plate = 2  # 2: Instagram
     cursor, ok_fans_num, total_req = "", 0, 1
     while True:
         targets = try_cookies(cookies=cookies, uid=target_uid, cursor=cursor)
@@ -299,19 +322,17 @@ def get_followers(
         for target in targets["users"]:
             uid = target["id"]
             head_pic = download_head_pic(target['profile_pic_url'])
-            dic = {
-                'plate': plate,
-                'url_uid': target_uid,
-                'type': 0,
-                'nickname': target['username'],
-                'head_pic': head_pic[1:],  # 去掉前面的點
-                'uid': uid,
-                'create_time': int(time.time()),
-                'update_time': 0,
-                'delete_time': 0
-            }
-            # print(dic)
-            print(target)
+            FollowerInstagram(
+                uid=uid,
+                ig_id=uid,
+                name=target["username"],
+                head_pic=head_pic[1:],
+                full_name=target["full_name"],
+                is_private=target["is_private"],
+                is_verified=target["is_verified"],
+                create_time=time.time(),
+                update_time=time.time(),
+            ).save()
             time.sleep(random.uniform(3, 6))
             ok_fans_num += 1
 
@@ -339,25 +360,52 @@ def get_followers(
 
 
 if __name__ == '__main__':
+    # Test Step 1: 創建爬蟲帳戶
     r = redis.Redis(host="localhost", port=6380, db=0, decode_responses=True)
-    create_sf_account(
-        account=account_,
-        password=aes_encrypt(password_),
-        instagram=Instagram(
-            uid=generate_uid(account=account_),
-            name=account_,
-            account=account_,
-            password=aes_encrypt(password_),
-            from_fb=False
-        )
-    )
+    # 測試創建爬蟲帳戶
+    # create_sf_account(
+    #     account=account_,
+    #     password=aes_encrypt(password_),
+    #     instagram=Instagram(
+    #         uid=generate_uid(account=account_),
+    #         name=account_,
+    #         account=account_,
+    #         password=aes_encrypt(password_),
+    #         from_fb=False
+    #     )
+    # )
     accounts = get_sf_account(account_)
-    if not accounts.social_medias.instagram.from_fb:
-        cookies = login_for_cookies(account_data=accounts)
-        accounts.social_medias.instagram.cookies_str = cookies
-        accounts.social_medias.instagram.update_time = time.time()
-        accounts.save()
+    # if not accounts.social_medias.instagram.from_fb:
+    #     cookies = login_for_cookies(account_data=accounts)
+    #     accounts.social_medias.instagram.cookies_str = cookies
+    #     accounts.social_medias.instagram.update_time = time.time()
+    #     accounts.save()
 
-    get_followers(cookies=accounts.social_medias.instagram.cookies_str)
+    # Test Step 2: 創建使用者帳戶
+    from schemes.user_schemes import UserAccount, UserInstagram
+    user_account = "6770296405"
+    user_password = "nothisaccount"
+    user_ig = UserInstagram(
+        uid=generate_uid(account=user_account),
+        ig_id=user_account,
+        name="6770296405",
+        allow_crawlers=[accounts.uid]
+    )
+    user = UserAccount(
+        uid=generate_uid(account=account_),
+        account=user_account,
+        password=aes_encrypt(user_password),
+        instagram=[user_ig.uid],
+        phone_number="1234567890",
+    )
 
+    # Test Step 3: 測試利用爬蟲帳號取得客戶IG的追蹤者
+    uid = get_user_id(
+        cookies=accounts.social_medias.instagram.cookies_str,
+        username="andy1994x"
+    )
+    print(uid)
+    # get_followers(
+    #     cookies=accounts.social_medias.instagram.cookies_str
+    # )
 
