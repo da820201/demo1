@@ -2,7 +2,7 @@ import redis
 import time
 import json
 from schemes import old_db_schemes
-from functions import facebook_login_and_deal_recapture
+from functions import facebook_automation
 
 
 putong_headers = {

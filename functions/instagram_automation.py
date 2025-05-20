@@ -599,6 +599,6 @@ if __name__ == '__main__':
         user_data=user_ig
     )
 
-    # Test Step 5:
+    # Test Step 5: 測試利用爬蟲帳號取得貼文資訊
 
 
