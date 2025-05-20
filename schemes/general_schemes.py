@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from enum import Enum
+from typing import Optional
 
 
 class GeneralSchemes(BaseModel):
@@ -13,3 +14,34 @@ class GeneralSchemes(BaseModel):
     user_mood: list = []
     tags: list = []
     get_time: float
+
+
+class IGSiteData(BaseModel):
+    uid: Optional[str] = None
+    av: Optional[str] = None
+    rev: Optional[str] = None
+    lsd: Optional[str] = None
+    __spin_r: str or int
+    __spin_b: str
+    __spin_t: str or int
+    __hsi: str
+    jazoest: str
+    fb_dtsg: str
+    hs: str
+    app_id: str
+    vid: str
+    csrf_token: str
+
+
+class IGUserInfo(BaseModel):
+    is_private: Optional[bool] = False
+    username: Optional[str] = None
+    pk: Optional[str] = None
+    profile_pic_url: Optional[str] = None
+    full_name: Optional[str] = None
+    follower_count: Optional[int] = 0
+    following_count: Optional[int] = 0
+    city_name: Optional[str] = None
+    is_business: Optional[bool] = False
+    is_verified: Optional[bool] = False
+    biography: Optional[str] = None

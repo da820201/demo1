@@ -85,7 +85,7 @@ class UserInstagram(JsonModel, index=True):
     ig_id: Optional[str] = None
     name: Optional[str] = Field(index=True, default=None)
     scapy_status: Optional[int] = 0
-    is_allow_crawler: Optional[bool] = 0  # 該IG是否與許爬蟲訪問
+    is_allow_crawler: Optional[bool] = False  # 該IG是否與許爬蟲訪問
     allow_crawlers: Optional[list[str]] = []  # 允許的爬蟲名單
     followers: Optional[list[str]] = []  # 追蹤者名單
     num_of_followers: Optional[int] = 0  # 追蹤者數
