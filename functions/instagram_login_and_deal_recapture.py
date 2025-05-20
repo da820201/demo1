@@ -9,10 +9,11 @@ import re
 from urllib.parse import parse_qs
 from bs4 import BeautifulSoup
 from schemes.general_schemes import IGSiteData, IGUserInfo
+from schemes.user_schemes import UserAccount, UserInstagram
 from schemes.sf_account_schemes import SFMetaAccount, Instagram
 from schemes.follower_schemes import FollowerInstagram
 from functions.meta_account_function import get_sf_account, create_sf_account, generate_uid
-from functions.utils import try_loops, aes_decrypt, aes_encrypt, download_head_pic
+from functions.utils import try_cookies, aes_decrypt, aes_encrypt, download_head_pic
 from DrissionPage import ChromiumPage, Chromium
 from DrissionPage import ChromiumOptions
 from fcaptcha.twocaptcha import TwoCaptcha
@@ -56,18 +57,18 @@ headers = {
 }
 
 
-def try_cookies(
+def get_ig_followers(
         cookies,
         uid: str,
         cursor: str = "",
         total_req: int = 1
 ) -> bool | dict:
-    url = f"https://www.instagram.com/api/v1/friendships/{uid}/followers/?count=100&search_surface=follow_list_page"
+    url = f"https://www.instagram.com/api/v1/friendships/{uid}/followers/?count=25&search_surface=follow_list_page"
     if cursor:
         url = f"{url}&max_id={cursor}"
 
     session = requests.session()
-    return try_loops(
+    return try_cookies(
         session,
         url=url,
         headers=headers,
@@ -76,6 +77,26 @@ def try_cookies(
         total_req=total_req, max_trys=6
     )
 
+
+def get_ig_posts(
+        cookies,
+        uid: str,
+        cursor: str = "",
+        total_req: int = 1
+) -> bool | dict:
+    url = f"https://www.instagram.com/api/v1/feed/user/{uid}/?count=12&max_id={cursor}"
+    if cursor:
+        url = f"{url}&max_id={cursor}"
+
+    session = requests.session()
+    return try_cookies(
+        session,
+        url=url,
+        headers=headers,
+        cookie_str=cookies,
+        cursor=cursor,
+        total_req=total_req, max_trys=6
+    )
 
 def is_in_ig_main_page(
         tab_: ChromiumPage.get_tab,
@@ -409,27 +430,63 @@ def get_user_info_by_vi_api(
 
     ig_headers['Cookie'] = cookies
     res_info = requests.get(
-        url=f'https://www.instagram.com/api/v1/users/{ig_id}/info/',
+        url=f'https://www.instagram.com/api/v1/users/{ig_id}/',
         headers=ig_headers
     ).json()
     return IGUserInfo(**res_info["user"])
 
-
-def get_followers(
+def get_posts(
         cookies,
         target_uid: str = "6770296405",  # "5951385086"
         timeout: float = 5
 ):
+    cursor, ok_post_num, total_req = "", 0, 1
+
+    while True:
+        targets = get_ig_posts(cookies=cookies, uid=target_uid, cursor=cursor)
+        for k, v in targets.items():
+            print(k, v)
+        print(len(targets["users"]))
+        user_ig = UserInstagram.get(generate_uid(account=target_uid))
+        try:
+            if not targets['items']:
+                logging.info(f"空数据，可能是没数据了，也可能是对方的链接没公开，修改状态为2")
+                if user_ig.post_status is not False:
+                    user_ig.posts_status = False
+                    user_ig.save()
+                    logging.info('贴子抓取状态更新为不抓取，post_status=False')
+                break
+        except:
+            logging.info(f"响应数据崩溃，跳出本链接")
+            break
+
+        # 更新状态
+        if user_ig.post_status is not True:
+            user_ig.posts_status = True
+            user_ig.save()
+            logging.info('贴子抓取状态更新为开始抓取，post_status=1')
+
+
+def get_followers(
+        cookies,
+        user_data: UserInstagram,
+        timeout: float = 5
+):
     cursor, ok_fans_num, total_req = "", 0, 1
     while True:
-        targets = try_cookies(cookies=cookies, uid=target_uid, cursor=cursor)
+        targets = get_ig_followers(cookies=cookies, uid=user_data.ig_id, cursor=cursor)
+        for k, v in targets.items():
+            print(k, v)
         print(len(targets["users"]))
         for target in targets["users"]:
-            uid = target["id"]
+            uid = generate_uid(target["id"])
+            if uid in user_data.followers:
+                logging.info(f"{target['id']}: {uid} 已經存在於該帳號中，不儲存該追蹤者")
+                continue
             head_pic = download_head_pic(target['profile_pic_url'])
             FollowerInstagram(
                 uid=uid,
-                ig_id=uid,
+                ig_id=target["id"],
                 name=target["username"],
                 head_pic=head_pic[1:],
                 full_name=target["full_name"],
@@ -438,11 +495,14 @@ def get_followers(
                 create_time=time.time(),
                 update_time=time.time(),
             ).save()
-            time.sleep(random.uniform(3, 6))
+            user_ig.followers.append(uid)
+            user_ig.save()
+            # time.sleep(random.uniform(3, 6))
             ok_fans_num += 1
 
         if "next_max_id" not in targets:
             logging.info("該帳號設置不能查看更多了，只有該帳號本身能看全部追蹤者")
+            logging.info(f"total: {ok_fans_num}")
             break
 
         cursor = targets["next_max_id"]
@@ -468,51 +528,57 @@ if __name__ == '__main__':
     # Test Step 1: 創建爬蟲帳戶
     r = redis.Redis(host="localhost", port=6380, db=0, decode_responses=True)
     # 測試創建爬蟲帳戶
-    create_sf_account(
-        account=account_,
-        password=aes_encrypt(password_),
-        instagram=Instagram(
-            uid=generate_uid(account=account_),
-            name=account_,
-            account=account_,
-            password=aes_encrypt(password_),
-            from_fb=False
-        )
-    )
+    # create_sf_account(
+    #     account=account_,
+    #     password=aes_encrypt(password_),
+    #     instagram=Instagram(
+    #         uid=generate_uid(account=account_),
+    #         name=account_,
+    #         account=account_,
+    #         password=aes_encrypt(password_),
+    #         from_fb=False
+    #     )
+    # )
     accounts = get_sf_account(account_)
-    if not accounts.social_medias.instagram.from_fb:
-        cookies = login_for_cookies(account_data=accounts)
-        accounts.social_medias.instagram.cookies_str = cookies
-        accounts.social_medias.instagram.update_time = time.time()
-        accounts.save()
-    print(accounts.social_medias.instagram.cookies_str)
+    # if not accounts.social_medias.instagram.from_fb:
+    #     cookies = login_for_cookies(account_data=accounts)
+    #     accounts.social_medias.instagram.cookies_str = cookies
+    #     accounts.social_medias.instagram.update_time = time.time()
+    #     accounts.save()
+    # print(accounts.social_medias.instagram.cookies_str)
 
     # Test Step 2: 創建使用者帳戶
-    from schemes.user_schemes import UserAccount, UserInstagram
-    user_account = "_.annastix"
+    user_account = "_.annastix@gmail.com"
+    ig_username = "_.annastix"
     user_password = "nothisaccount"
-    user_ig = UserInstagram(
-        uid=generate_uid(account=user_account),
-        name=user_account,
-        allow_crawlers=[accounts.uid]
-    )
-    user_ig.save()
+
     user = UserAccount(
         uid=generate_uid(account=account_),
         account=user_account,
         password=aes_encrypt(user_password),
-        instagram=[user_ig.uid],
         phone_number="1234567890",
     )
     user.save()
 
-    # 校驗使用者帳戶資料是否齊全
+    # Test Step 3: 校驗使用者帳戶資料與補全
     session = requests.session()
     data = get_user_id(
         cookies=accounts.social_medias.instagram.cookies_str,
-        username=user_ig.name,
+        username=ig_username,
         session=session
     )
+
+    user_ig = UserInstagram(
+        uid=generate_uid(account=data.uid),
+        name=ig_username,
+        allow_crawlers=[accounts.uid]
+    )
+    user_ig.save()
+
+    if user_ig.uid not in user.instagram:
+        user.instagram.append(user_ig.uid)
+        user.save()
+
     user_data = get_ig_user_info_by_graph_api(
         session=session,
         username=user_ig.name,
@@ -523,14 +589,16 @@ if __name__ == '__main__':
     #     username=user_ig.name,
     #     cookies=accounts.social_medias.instagram.cookies_str
     # )
-    print(user_data)
     user_ig.ig_id=user_data.pk
     user_ig.update_time = time.time()
     user_ig.save()
 
-    # Test Step 3: 測試利用爬蟲帳號取得客戶IG的追蹤者
+    # Test Step 4: 測試利用爬蟲帳號取得客戶IG的追蹤者
     get_followers(
         cookies=accounts.social_medias.instagram.cookies_str,
-        # target_uid=user_ig.uid
+        user_data=user_ig
     )
+
+    # Test Step 5:
+
 

@@ -33,6 +33,7 @@ class UserFacebookGroup(JsonModel, index=True):
     num_of_members: Optional[int] = 0  # 社團人數
     posts: Optional[list] = []  # 社團貼文
     num_of_posts: Optional[int] = 0  #  社團貼文數
+    posts_status: Optional[bool] = True
     cookies_str: Optional[str] = None
     create_time: Optional[float] = Field(default_factory=lambda: time.time())
     update_time: Optional[float] = Field(default_factory=lambda: time.time())
@@ -54,6 +55,7 @@ class UserFacebookPage(JsonModel, index=True):
     num_of_followers: Optional[int] = 0  # 粉絲專頁追蹤者數
     posts: Optional[list] = []  # 粉絲專頁貼文
     num_of_posts: Optional[int] = 0  # 粉絲專頁貼文數
+    posts_status: Optional[bool] = True
     scapy_status: Optional[int] = 0
     cookies_str: Optional[str] = None
     create_time: Optional[float] = Field(default_factory=lambda: time.time())
@@ -89,6 +91,9 @@ class UserInstagram(JsonModel, index=True):
     allow_crawlers: Optional[list[str]] = []  # 允許的爬蟲名單
     followers: Optional[list[str]] = []  # 追蹤者名單
     num_of_followers: Optional[int] = 0  # 追蹤者數
+    posts: Optional[list] = []  # 粉絲專頁貼文
+    num_of_posts: Optional[int] = 0  # 粉絲專頁貼文數
+    posts_status: Optional[bool] = True
     courses: Optional[list] = []
     create_time: Optional[float] = Field(default_factory=lambda: time.time())
     update_time: Optional[float] = Field(default_factory=lambda: time.time())
@@ -119,9 +124,9 @@ class UserAccount(JsonModel, index=True):
     uid: str = Field(index=True, primary_key=True)
     account: str = Field(index=True)
     password: str
-    facebook: Optional[list[str]] = None
-    instagram: Optional[list[str]]  = None
-    threads: Optional[list[str]] = None
+    facebook: Optional[list[str]] = []
+    instagram: Optional[list[str]]  = []
+    threads: Optional[list[str]] = []
     birthday: Optional[float] = Field(default_factory=lambda: time.time())
     phone_number: Optional[str]
     create_time: Optional[float] = Field(default_factory=lambda: time.time())

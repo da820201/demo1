@@ -59,7 +59,7 @@ def find_value(data, target_key):
     return None
 
 
-def try_loops(session: requests.Session, cookie_str, url, headers, cursor, total_req, max_trys=6) -> bool | dict:
+def try_cookies(session: requests.Session, cookie_str, url, headers, cursor, total_req, max_trys=6) -> bool | dict:
     for i in range(1, max_trys):
         try:
             logging.info(
