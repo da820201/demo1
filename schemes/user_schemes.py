@@ -107,7 +107,9 @@ class UserInstagram(JsonModel, index=True):
 class UserThreads(JsonModel, index=True):
     uid: Optional[str] = Field(index=True, primary_key=True)
     name: Optional[str] = Field(index=True)
+    threads_id: Optional[str] = None
     scapy_status: Optional[int] = 0
+    biography: Optional[str] = None
     is_allow_crawler: Optional[bool] = 0   # 該Threads是否與許爬蟲訪問
     allow_crawlers: Optional[list[str]] = []  # 允許的爬蟲名單
     followers: Optional[list[str]] = []  # 追蹤者名單

@@ -76,7 +76,6 @@ def update_sf_account(
     updated.save()
 
 
-
 if __name__ == "__main__":
     r = redis.Redis(host="localhost", port=6380, db=0, decode_responses=True)
     from data.account_data import account_, password_

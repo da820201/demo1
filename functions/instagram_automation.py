@@ -279,12 +279,11 @@ def extract_site_data(html: str) -> IGSiteData or False:
     haste_session = re.search(r'"haste_session"\s*:\s*"([^"]+)"', html)
     jazoest = re.search(r'jazoest=([0-9]+)', html)
     vid = re.search(r'"versioningID"\s*:\s*(?:"([^"]+)"|(\d+))', html)
-    print(lsd)
-    print(av, rev, app_id, vid, csrf_token)
     if __spin_r:
         result = IGSiteData(
             av=av.group(1),
             rev=rev.group(1),
+            lsd=lsd.group(1),
             __spin_r=__spin_r.group(1),
             __spin_b=__spin_b.group(1),
             __spin_t=__spin_t.group(1),

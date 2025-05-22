@@ -59,11 +59,20 @@ def find_value(data, target_key):
     return None
 
 
-def try_cookies(session: requests.Session, cookie_str, url, headers, cursor, total_req, max_trys=6) -> bool | dict:
+def try_cookies(
+        session: requests.Session,
+        cookie_str,
+        url,
+        headers,
+        cursor,
+        total_req,
+        max_trys=6
+) -> bool | dict:
     for i in range(1, max_trys):
         try:
             logging.info(
-                f"【{time.strftime('%H:%M:%S')}】嘗試第 {i}-{total_req} 次請求追蹤者數據，cursor：{cursor[:30]}...")
+                f"【{time.strftime('%H:%M:%S')}】嘗試第 {i}-{total_req} 次請求追蹤者數據，cursor：{cursor}..."
+            )
             headers["Cookie"] = cookie_str
             result = session.get(url=url, headers=headers).json()
             return result
