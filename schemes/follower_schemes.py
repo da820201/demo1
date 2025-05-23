@@ -44,8 +44,11 @@ class FollowerInstagram(JsonModel, index=True):
 class FollowerThreads(JsonModel, index=True):
     uid: Optional[str] = Field(index=True, primary_key=True)
     name: Optional[str] = Field(index=True)
-    profile_url: Optional[str] = None
     head_pic_url: Optional[str] = None
+    full_name: Optional[str] = None
+    is_private: Optional[bool] = False
+    is_verified: Optional[bool] = False
+    follower_count: Optional[int] = 0
     create_time: Optional[float] = Field(default_factory=lambda: time.time())
     update_time: Optional[float] = Field(default_factory=lambda: time.time())
 

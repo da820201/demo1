@@ -8,10 +8,11 @@ import random
 import re
 from urllib.parse import parse_qs
 from bs4 import BeautifulSoup
+from data.constants import Path
 from schemes.general_schemes import IGSiteData, IGUserInfo
 from schemes.user_schemes import UserAccount, UserInstagram
 from schemes.sf_account_schemes import SFMetaAccount, Instagram
-from schemes.follower_schemes import FollowerInstagram
+from schemes.follower_schemes import FollowerThreads
 from functions.meta_account_function import get_sf_account, create_sf_account, generate_uid
 from functions.utils import try_cookies, aes_decrypt, aes_encrypt, download_head_pic
 from DrissionPage import ChromiumPage, Chromium
@@ -63,7 +64,7 @@ def get_ig_followers(
         cursor: str = "",
         total_req: int = 1
 ) -> bool | dict:
-    url = f"https://www.instagram.com/api/v1/friendships/{uid}/followers/?count=25&search_surface=follow_list_page"
+    url = f"{Path.InstagramAPIV1}/friendships/{uid}/followers/?count=25&search_surface=follow_list_page"
     if cursor:
         url = f"{url}&max_id={cursor}"
 
@@ -84,7 +85,7 @@ def get_ig_posts(
         cursor: str = "",
         total_req: int = 1
 ) -> bool | dict:
-    url = f"https://www.instagram.com/api/v1/feed/user/{uid}/?count=12&max_id={cursor}"
+    url = f"{Path.InstagramAPIV1}/feed/user/{uid}/?count=12&max_id={cursor}"
     if cursor:
         url = f"{url}&max_id={cursor}"
 
@@ -305,7 +306,7 @@ def get_user_id(
         session: requests.session,
         timeout: float = 5
 ) -> IGSiteData:
-    profile_url = f"https://www.instagram.com/{username}/"
+    profile_url = f"{Path.InstagramHost}/{username}/"
     headers["Cookie"] = cookies
     result = session.get(url=profile_url, headers=headers).text
     # print(result)
@@ -338,8 +339,8 @@ def get_ig_user_info_by_graph_api(
     headers = {
         "accept": "*/*",
         "accept-language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-        "origin": f"https://www.instagram.com",
-        "referer": f"https://www.instagram.com/{username}/",
+        "origin": Path.InstagramHost,
+        "referer": f"{Path.InstagramHost}/{username}/",
         "content-type": "application/x-www-form-urlencoded", "priority": "u=1, i",
         "sec-ch-prefers-color-scheme": "light",
         "sec-ch-ua": '"Chromium";v="136", "Google Chrome";v="136", "Not.A/Brand";v="99"',
@@ -363,7 +364,7 @@ def get_ig_user_info_by_graph_api(
         }
     )
     payload = f"av=17841474347125111&__d=www&__user=0&__a=1&__req=1a&__hs=20227.HYP%3Ainstagram_web_pkg.2.1...1&dpr=2&__ccg=EXCELLENT&__rev=1022957439&__s=smucnh%3Aimq43g%3Aw1vpw0&__hsi=7506036922928637977&__dyn=7xeUjG1mxu1syUbFp41twpUnwgU7SbzEdF8aUco2qwJxS0DU2wx609vCwjE1EE2Cw8G11wBz81s8hwGxu786a3a1YwBgao6C0Mo2swtUd8-U2zxe2GewGw9a361qwuEjUlwhEe87q0oa2-azqwt8d-2u2J0bS1LwTwKG1pg2fwxyo6O1FwlA3a3zhA6bwIxeUnAwHxW1oxe6UaU3cyUC4o16UswFw&__csr=jjgvT7gR3Yt5N58kSyIRljAfFll8OERelqCheQArpe_KlWjgFamnQjnhAOaQ-Zvh6EGhe8HBjFd4jiGHGjJ3ax2ZbACGj-i_8UF1efyGK_DVRXz98ZkmF98yFHD-GBKjF5GbhZ5CCB-EC9UHBgKqi9y9UG5ooxeAmqeUxa8DGRXg01iUU1g920fB04dJwyfDgGOwbK0WyambgkU2mDgd86OaChUO4U4q3C4O0867E0WG05q80x63i0i-1PyFGwDwE8TeUiwFA9a6o2JgaFQ0sfe0iQyx90rVA0HUcRg2mw1Vp02n949g062y0dHw60w0LDw&__hsdp=geXA4h4PiTk9GMyJ3W2M_AISOkAk4BmwhgV2QBFy9k8iOe2lb20We40pxgux2bwsO4wIzU-6ok9AoswNoKh3oryfwyxu3SQ4y3U4i2GfxO6EO3268gx-68KEmwaSEnwio3gwrU3LwibwcO0h-1lUswNwgU8E5O1oxa0Co1vS7o7a362S3pwQw921i-2uexS4o8o4aexe5zw&__hblp=0mUvwBxu7onwIgao6N3UpBUnwcq4QbzUgBAJ0RzomwMwxwzCGq16gkybCxa8yfzEjxt0xxle2mi9gyEbqyUrypqwAzUO2maghBx27UngKGyEycwhoC1gGqmawipE39wRwVwTw962m18K0KoCtwh87Sm1lByEuwBUswNwGxyUuwn8qwQy8iw9C0ZE6a9xJBxu2Z0gocoG2a6osod88WxS1bAx-2W2Gegsx66GK2jz8WejgS5zK&__comet_req=7&fb_dtsg=NAftilM-2UH6osDDeAPJlLKco1FiKdwRj-U9gxxg689eV393EqPJlSA%3A17843683195144578%3A1747633494&jazoest=26096&lsd=9v5jNVzlz9uzviLGT6-0zc&__spin_r=1022957439&__spin_b=trunk&__spin_t=1747635408&__crn=comet.igweb.PolarisProfilePostsTabRoute&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=PolarisProfilePageContentQuery&variables=%7B%22id%22%3A%22{uid}%22%2C%22render_surface%22%3A%22PROFILE%22%7D&server_timestamps=true&doc_id=9661599240584790"
-    user_info_url = "https://www.instagram.com/graphql/query"
+    user_info_url = Path.InstagramGraphqlQuery
     payload = {k: v[0] for k, v in parse_qs(payload).items()}
 
     payload.update(crawler_data.dict())
@@ -381,7 +382,7 @@ def get_user_info_by_vi_api(
         "Accept": "*/*",
         "Accept-Language": "zh-CN,zh;q=0.9",
         "Priority": "u=1, i",
-        "Referer": "https://www.instagram.com/netaporter/followers/",
+        "Referer": f"{Path.InstagramHost}/netaporter/followers/",
         "Sec-Ch-Prefers-Color-Scheme": "light",
         "Sec-Ch-Ua": "\"Chromium\";v=\"124\", \"Microsoft Edge\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
         "Sec-Ch-Ua-Full-Version-List": "\"Chromium\";v=\"124.0.6367.207\", \"Microsoft Edge\";v=\"124.0.2478.105\", \"Not-A.Brand\";v=\"99.0.0.0\"",
@@ -422,14 +423,14 @@ def get_user_info_by_vi_api(
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
         "Viewport-Width": "1260"
     }
-    res = requests.get(url=f"https://www.instagram.com/{username}/", headers=putong_headers).text
+    res = requests.get(url=f"{Path.InstagramHost}/{username}/", headers=putong_headers).text
     # print(res.encode().decode('raw_unicode_escape'))
 
     ig_id = re.findall('"props":\{"id":"(.*?)"', res, re.S)[0]
 
     ig_headers['Cookie'] = cookies
     res_info = requests.get(
-        url=f'https://www.instagram.com/api/v1/users/{ig_id}/',
+        url=f'{Path.InstagramAPIV1}/users/{ig_id}/',
         headers=ig_headers
     ).json()
     return IGUserInfo(**res_info["user"])
@@ -483,14 +484,16 @@ def get_followers(
                 logging.info(f"{target['id']}: {uid} 已經存在於該帳號中，不儲存該追蹤者")
                 continue
             head_pic = download_head_pic(target['profile_pic_url'])
-            FollowerInstagram(
+            FollowerThreads(
                 uid=uid,
                 ig_id=target["id"],
                 name=target["username"],
                 head_pic=head_pic[1:],
                 full_name=target["full_name"],
-                is_private=target["is_private"],
+                is_private=target["text_post_app_is_private"],
                 is_verified=target["is_verified"],
+                follower_count=targets["follower_count"],
+                profile_pic_url=targets["profile_pic_url"],
                 create_time=time.time(),
                 update_time=time.time(),
             ).save()

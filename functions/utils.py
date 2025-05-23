@@ -10,6 +10,7 @@ import os
 import random
 import string
 import platform
+from data.constants import Path
 from bs4 import BeautifulSoup
 from typing import Optional
 from pydantic import BaseModel
@@ -101,13 +102,6 @@ class ORJSONDecoder:
         return orjson.loads(s)
 
 
-def load_lua_script(redis_server: redis.Redis, script_path: str = "./data/set_with_time.lua"):
-    with open(f"{script_path}", "r") as f:
-        lua_script = f.read()
-
-    redis_server.function_load(lua_script, replace=True)
-
-
 def aes_encrypt(plaintext: str) -> str:
     padder = padding.PKCS7(128).padder()
     padded_data = padder.update(plaintext.encode()) + padder.finalize()
@@ -179,7 +173,7 @@ def download_head_pic(
 
 def get_fb_dtsg(cookie_str):
     retry_times = 3
-    followers_url = f"https://www.facebook.com/"
+    followers_url = Path.FacebookHost
     putong_headers = {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         "Accept-Language": "en,zh-CN;q=0.9,zh;q=0.8,zh-TW;q=0.7",
@@ -229,3 +223,6 @@ def get_fb_dtsg(cookie_str):
     fb_dtsg = find_value(madan, "token")
     logging.info(f"取得fb_dtsg：{fb_dtsg} \n")
     return fb_dtsg
+
+
+

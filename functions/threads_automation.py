@@ -9,6 +9,7 @@ import re
 import json
 from urllib.parse import parse_qs
 from bs4 import BeautifulSoup
+from data.constants import Path
 from schemes.general_schemes import ThreadsUserInfo, ThreadsFriendshipStatus, ThreadsSiteData
 from schemes.sf_account_schemes import SFMetaAccount, Threads
 from schemes.user_schemes import UserAccount, UserThreads
@@ -79,11 +80,10 @@ def get_threads_followers(
         cursor: str = "",
         total_req: int = 1,
 ) -> bool | dict:
-    url = "https://www.threads.com/graphql/query"
 
     return try_cookies(
         session,
-        url=url,
+        url=Path.ThreadsGraphqlQuery,
         headers=headers,
         cookie_str=cookies,
         cursor=cursor,
@@ -449,7 +449,7 @@ def get_followers(
         cookies: str,
         uid,
         crawler_data: ThreadsSiteData,
-        user_data: UserInstagram,
+        user_data: UserThreads,
         session: requests.session,
         timeout: float = 5
 ):
@@ -561,7 +561,7 @@ if __name__ == "__main__":
     # accounts.social_medias.threads.cookies_str = cookies
     # accounts.social_medias.threads.update_time = time.time()
     # accounts.save()
-    print(accounts.social_medias.threads.cookies_str)
+    # print(accounts.social_medias.threads.cookies_str)
 
     # Test Step 2: 創建使用者帳戶
     session = requests.session()
@@ -580,7 +580,7 @@ if __name__ == "__main__":
 
 
     # Test Step 3: 校驗使用者帳戶資料與補全
-    user_info_data, user_site_data = get_user_id(
+    user_data, user_site_data = get_user_id(
         cookies=accounts.social_medias.threads.cookies_str,
         username=threads_username,
         session=session
@@ -596,13 +596,6 @@ if __name__ == "__main__":
     if user_threads.uid not in user.threads:
         user.threads.append(user_threads.uid)
         user.save()
-
-    # user_data = get_ig_user_info_by_graph_api(
-    #     session=session,
-    #     username=user_threads.name,
-    #     uid=data.uid,
-    #     crawler_data=data,
-    # )
 
     # Test Step 4: 測試利用爬蟲帳號取得客戶IG的追蹤者
     get_followers(
