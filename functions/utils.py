@@ -5,6 +5,7 @@ import base64
 import hashlib
 import requests
 import orjson
+import copy
 import redis
 import os
 import random
@@ -67,6 +68,7 @@ def try_cookies(
         headers,
         cursor,
         total_req,
+        data=None,
         max_trys=6
 ) -> bool | dict:
     for i in range(1, max_trys):
@@ -75,7 +77,10 @@ def try_cookies(
                 f"【{time.strftime('%H:%M:%S')}】嘗試第 {i}-{total_req} 次請求追蹤者數據，cursor：{cursor}..."
             )
             headers["Cookie"] = cookie_str
-            result = session.get(url=url, headers=headers).json()
+            if data:
+                result = session.post(url=url, headers=headers, data=data).json()
+            else:
+               result = session.get(url=url, headers=headers).json()
             return result
         except requests.RequestException as e:
             sleep_time = i * 2 + 1
@@ -155,7 +160,8 @@ def download_head_pic(
             time.sleep(sleep_time)
             pass
     else:
-        raise Exception("5次重試均失敗")
+        logging.info("5次重試均失敗")
+        return None
     html1 = file_content.content
     file_name = ''.join(random.sample(string.ascii_letters + string.digits, 12))
 

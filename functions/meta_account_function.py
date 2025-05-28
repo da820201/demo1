@@ -63,6 +63,13 @@ def merge_models(base: BaseModel, patch: BaseModel) -> BaseModel:
     return base.__class__.model_validate(merged_data)
 
 
+def get_data_by_uid(
+        uid: str,
+        model: BaseModel,
+) -> BaseModel:
+    return model.get(uid)
+
+
 def update_sf_account(
         account: str,
         data: UpdateSFMetaAccount
@@ -70,6 +77,30 @@ def update_sf_account(
     current = get_sf_account(account=account)
     if not current:
         raise ValueError("Account not found")
+    # 更新原模型
+    updated = merge_models(current, data)
+    updated.update_time = time.time()
+    updated.save()
+
+
+def update_model_by_uid(
+        uid: str,
+        model,
+        data: dict or BaseModel,
+        uid_encrypted: bool = False
+):
+    """
+    更新模型
+    :param uid: uid
+    :param model: any model
+    :param uid_encrypted: uid 是否加密
+    :return:
+    """
+    current = get_data_by_uid(uid=uid if uid_encrypted else generate_uid(uid), model=model)
+    if not current:
+        raise ValueError("Account not found")
+    if isinstance(data, dict):
+        data = model(**data)
     # 更新原模型
     updated = merge_models(current, data)
     updated.update_time = time.time()

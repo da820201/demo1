@@ -49,13 +49,13 @@ if __name__ == '__main__':
     )
 
     # TODO 雖然解掉了 Recapture1 的驗證，但有可能遇到 Recapture2 的驗證，這還需要想辦法處理。
-    data = facebook_login_and_deal_recapture.login_and_get_cookies(
+    data = facebook_automation.login_and_get_cookies(
         email_,
         _password=pd,
     )
 
     # TODO 這邊要補一段，確認粉專有該管理員之後需要切換Facebook帳號->粉專並且取出Cookies
-    page_index = facebook_login_and_deal_recapture.check_is_facebook_page_manager(
+    page_index = facebook_automation.check_is_facebook_page_manager(
         data, "365914203781117"
     )
 

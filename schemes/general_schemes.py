@@ -18,12 +18,8 @@ class GeneralSchemes(BaseModel):
 class MetaBaseSiteData(BaseModel):
     uid: Optional[str] = None
     av: Optional[str] = None
-    rev: Optional[str] = None
     lsd: Optional[str] = None
-    __spin_r: str or int
-    __spin_b: str
-    __spin_t: str or int
-    __hsi: str
+    rev: Optional[str] = None
     jazoest: str
     fb_dtsg: str
     hs: str
@@ -34,11 +30,19 @@ class MetaBaseSiteData(BaseModel):
 
 class IGSiteData(MetaBaseSiteData):
     uid: Optional[str] = None
-
+    __spin_r: str or int
+    __spin_b: str
+    __spin_t: str or int
+    __hsi: str
 
 
 class ThreadsSiteData(MetaBaseSiteData):
     uid: Optional[str] = None
+    spin_r: str
+    spin_b: str
+    spin_t: str
+    hsi: str
+    machine_id: str
 
 
 class IGUserInfo(BaseModel):
@@ -64,7 +68,7 @@ class ThreadsFriendshipStatus(BaseModel):
 
 
 class ThreadsUserInfo(BaseModel):
-    is_private: Optional[bool] = False
+    text_post_app_is_private: Optional[bool] = False
     username: Optional[str] = None
     pk: Optional[str] = None
     profile_pic_url: Optional[str] = None

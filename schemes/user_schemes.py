@@ -1,7 +1,5 @@
 import datetime
 import time
-from schemes.follower_schemes import FollowerFacebook, FollowerInstagram, FollowerThreads
-from schemes.sf_account_schemes import SFMetaAccount
 from redis_om import (
     EmbeddedJsonModel,
     JsonModel,
@@ -68,8 +66,8 @@ class UserFacebookPage(JsonModel, index=True):
 
 class UserFacebook(JsonModel, index=True):
     uid: Optional[str] = Field(index=True, primary_key=True)
-    name: Optional[str] = Field(index=True)
-    fb_id: Optional[str] = None
+    name: Optional[str] = Field(index=True)  # username
+    fb_id: Optional[str] = None  # pk
     profile_url: Optional[str] = None
     head_pic_url: Optional[str] = None
     pages: Optional[list[str]] = None
@@ -84,8 +82,8 @@ class UserFacebook(JsonModel, index=True):
 
 class UserInstagram(JsonModel, index=True):
     uid: Optional[str] = Field(index=True, primary_key=True)
-    ig_id: Optional[str] = None
-    name: Optional[str] = Field(index=True, default=None)
+    ig_id: Optional[str] = None  # pk
+    name: Optional[str] = Field(index=True, default=None)  # username
     scapy_status: Optional[int] = 0
     is_allow_crawler: Optional[bool] = False  # 該IG是否與許爬蟲訪問
     allow_crawlers: Optional[list[str]] = []  # 允許的爬蟲名單
@@ -106,11 +104,13 @@ class UserInstagram(JsonModel, index=True):
 
 class UserThreads(JsonModel, index=True):
     uid: Optional[str] = Field(index=True, primary_key=True)
-    name: Optional[str] = Field(index=True)
-    threads_id: Optional[str] = None
+    name: Optional[str] = Field(index=True)  # username
+    full_name: Optional[str] = None  # full_name
+    threads_id: Optional[str] = None  # pk
     scapy_status: Optional[int] = 0
     biography: Optional[str] = None
-    is_allow_crawler: Optional[bool] = 0   # 該Threads是否與許爬蟲訪問
+
+    is_private: Optional[bool] = 0   # 該Threads是否與許爬蟲訪問
     allow_crawlers: Optional[list[str]] = []  # 允許的爬蟲名單
     followers: Optional[list[str]] = []  # 追蹤者名單
     num_of_followers: Optional[int] = 0  # 追蹤者數
