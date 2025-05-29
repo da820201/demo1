@@ -1,6 +1,8 @@
 import logging
 import typing
 from sqlite3.dbapi2 import threadsafety
+
+import redis_om
 import requests
 import sys
 import os
@@ -14,7 +16,7 @@ from multiprocessing import Pipe
 from urllib.parse import parse_qs
 from bs4 import BeautifulSoup
 from schemes.graph_api_response_threads_schemes import Data
-from data.constants import Path, ThreadsPayload
+from data.constants import Path, ThreadsPayload, ThreadsHeaders
 from schemes.general_schemes import ThreadsUserInfo, ThreadsFriendshipStatus, ThreadsSiteData
 from schemes.sf_account_schemes import SFMetaAccount, Threads
 from schemes.user_schemes import UserAccount, UserThreads
@@ -370,39 +372,32 @@ def extract_site_data(html: str) -> ThreadsSiteData or False:
     return False
 
 
-def get_user_id(
+def get_user_site_data(
+    cookies,
+    username: str,
+    session: requests.session,
+    timeout: float = 5
+) -> ThreadsSiteData:
+    headers = ThreadsHeaders.GetUserProfile
+    headers.update({"cookie": cookies})
+    url = f"https://www.threads.com/@{username}/"
+    res = session.get(url=url, headers=headers).text
+    user_site_data = extract_site_data(res)
+    return user_site_data
+
+
+def get_user_info(
         cookies,
         username: str,
         session: requests.session,
         timeout: float = 5
-) -> tuple[ThreadsUserInfo, ThreadsSiteData] or tuple[False, False]:
-    headers = {
-        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        "accept-language": "zh-TW,zh;q=0.9",
-        "cache-control": "max-age=0",
-        "dpr": "2",
-        "priority": "u=0, i",
-        "sec-ch-prefers-color-scheme": "light",
-        "sec-ch-ua": "\"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\"",
-        "sec-ch-ua-full-version-list": "\"Chromium\";v=\"136.0.7103.114\", \"Google Chrome\";v=\"136.0.7103.114\", \"Not.A/Brand\";v=\"99.0.0.0\"",
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-model": "\"\"",
-        "sec-ch-ua-platform": "\"macOS\"",
-        "sec-ch-ua-platform-version": "\"15.4.0\"",
-        "sec-fetch-dest": "document",
-        "sec-fetch-mode": "navigate",
-        "sec-fetch-site": "same-origin",
-        "sec-fetch-user": "?1",
-        "upgrade-insecure-requests": "1",
-        "viewport-width": "1180"
-    }
+) -> ThreadsUserInfo or False:
+    headers = ThreadsHeaders.GetUserProfile
     headers.update({"cookie": cookies})
     url = f"https://www.threads.com/@{username}/"
     res = session.get(url=url, headers=headers).text
     user_info_data = extract_threads_user_info(res)
-    user_site_data = extract_site_data(res)
-    user_site_data.uid = user_info_data.pk
-    return user_info_data, user_site_data
+    return user_info_data
 
 
 def login_for_cookies(
@@ -577,10 +572,10 @@ if __name__ == "__main__":
     #     )
     # )
     accounts = get_sf_account(account_, decrypt=False)
-    # cookies = get_threads(account_data=accounts)
-    # accounts.social_medias.threads.cookies_str = cookies
-    # accounts.social_medias.threads.update_time = time.time()
-    # accounts.save()
+    cookies = get_threads(account_data=accounts)
+    accounts.social_medias.threads.cookies_str = cookies
+    accounts.social_medias.threads.update_time = time.time()
+    accounts.save()
 
     print(accounts.social_medias.threads.cookies_str)
     # Test Step 2: 被動監聽取得CSR/DYN
@@ -593,22 +588,30 @@ if __name__ == "__main__":
     user_account = "snsconsul.kaori@gmail.com"
     threads_username = "snsconsul.kaori"
     user_password = "nothisaccount"
-
-    user = UserAccount.get(generate_uid(account=account_))
-    # user = UserAccount(
-    #     uid=generate_uid(account=account_),
-    #     account=user_account,
-    #     password=aes_encrypt(user_password),
-    #     phone_number="1234567890",
-    # )
-    # user.save()
+    #. 如果找不到UID 就自己創建一個
+    try:
+        user = UserAccount.get(generate_uid(account=account_))
+    except redis_om.model.NotFoundError:
+        user = UserAccount(
+            uid=generate_uid(account=account_),
+            account=user_account,
+            password=aes_encrypt(user_password),
+            phone_number="1234567890",
+        )
+        user.save()
 
     # Test Step 3: 校驗使用者帳戶資料與補全
-    user_data, user_site_data = get_user_id(
+    user_data = get_user_info(
         cookies=accounts.social_medias.threads.cookies_str,
         username=threads_username,
         session=session
     )
+    user_site_data = get_user_site_data(
+        cookies=accounts.social_medias.threads.cookies_str,
+        username=threads_username,
+        session=session
+    )
+
     if generate_uid(user_data.pk) in user.threads:
         user_threads = UserThreads.get(generate_uid(user_data.pk))
     else:
