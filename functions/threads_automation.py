@@ -435,10 +435,10 @@ def login_for_cookies(
             click_another_login_button(
                 tab_=tab
             )
-
+    print(aes_decrypt(account_data.password))
     tab = login(
         account=account_data.account,
-        password=aes_decrypt(account_data.password),
+        password="983b0ca2",
         tab_=tab
     )
 
@@ -560,18 +560,19 @@ if __name__ == "__main__":
     # Test Step 1: 創建爬蟲帳戶
     r = redis.Redis(host="localhost", port=6380, db=0, decode_responses=True)
     # 測試創建爬蟲帳戶
-    # create_sf_account(
-    #     account=account_,
-    #     password=aes_encrypt(password_),
-    #     threads=Threads(
-    #         uid=generate_uid(account=account_),
-    #         name=account_,
-    #         account=account_,
-    #         password=aes_encrypt(password_),
-    #         from_fb=False
-    #     )
-    # )
+    create_sf_account(
+        account=account_,
+        password=aes_encrypt(password_),
+        threads=Threads(
+            uid=generate_uid(account=account_),
+            name=account_,
+            account=account_,
+            password=aes_encrypt(password_),
+            from_fb=False
+        )
+    )
     accounts = get_sf_account(account_, decrypt=False)
+    print(accounts)
     cookies = get_threads(account_data=accounts)
     accounts.social_medias.threads.cookies_str = cookies
     accounts.social_medias.threads.update_time = time.time()
@@ -580,8 +581,8 @@ if __name__ == "__main__":
     print(accounts.social_medias.threads.cookies_str)
     # Test Step 2: 被動監聽取得CSR/DYN
     # share_dict = {}
-    # p = threading.Thread(target=print_background_package, args=(share_dict, ))
-    # p.start()
+    p = threading.Thread(target=print_background_package, args=(share_dict, ))
+    p.start()
 
     # Test Step 2: 創建使用者帳戶
     session = requests.session()
@@ -626,20 +627,20 @@ if __name__ == "__main__":
             threads_id=user_data.pk
         )
         user_threads.save()
-
-    if user_threads.uid not in user.threads:
-        user.threads.append(user_threads.uid)
-        user.save()
+    #
+    # if user_threads.uid not in user.threads:
+    #     user.threads.append(user_threads.uid)
+    #     user.save()
 
     # Test Step 4: 測試利用爬蟲帳號取得客戶IG的追蹤者
-    get_followers(
-        cookies=accounts.social_medias.threads.cookies_str,
-        user_id=user_threads.threads_id,
-        user_data=user_threads,
-        session=session,
-        user_site_data=user_site_data,
-        timeout=5
-    )
+    # get_followers(
+    #     cookies=accounts.social_medias.threads.cookies_str,
+    #     user_id=user_threads.threads_id,
+    #     user_data=user_threads,
+    #     session=session,
+    #     user_site_data=user_site_data,
+    #     timeout=5
+    # )
 
     # Test Step 5: 測試利用爬蟲帳號取得貼文資訊
 

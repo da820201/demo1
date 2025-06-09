@@ -268,7 +268,7 @@ def login_for_cookies(
 # 定義函數：從 DTSGInitialData 中提取 token
 def extract_site_data(html: str) -> IGSiteData or False:
     dtsg = re.search(r'"DTSGInitialData".*?"token"\s*:\s*"([^"]+)"', html, re.DOTALL)
-    lsd = re.search(r'"LSDLSD".*?"token"\s*:\s*"([^"]+)"', html, re.DOTALL)
+    lsd = re.search(r'"LSD".*?"token"\s*:\s*"([^"]+)"', html, re.DOTALL)
     __spin_r = re.search(r'"__spin_r"\s*:\s*(?:"([^"]+)"|(\d+))', html)
     av = re.search(r'"NON_FACEBOOK_USER_ID"\s*:\s*(?:"([^"]+)"|(\d+))', html)
     rev = re.search(r'"server_revision"\s*:\s*(?:"([^"]+)"|(\d+))', html)
@@ -280,15 +280,16 @@ def extract_site_data(html: str) -> IGSiteData or False:
     haste_session = re.search(r'"haste_session"\s*:\s*"([^"]+)"', html)
     jazoest = re.search(r'jazoest=([0-9]+)', html)
     vid = re.search(r'"versioningID"\s*:\s*(?:"([^"]+)"|(\d+))', html)
+    # print(html)
     if __spin_r:
         result = IGSiteData(
             av=av.group(1),
             rev=rev.group(1),
             lsd=lsd.group(1),
-            __spin_r=__spin_r.group(1),
-            __spin_b=__spin_b.group(1),
-            __spin_t=__spin_t.group(1),
-            __hsi=hsi.group(1),
+            spin_r=__spin_r.group(0).split(":")[1].replace("'", ""),
+            spin_b=__spin_b.group(1),
+            spin_t=__spin_t.group(0).split(":")[1].replace("'", ""),
+            hsi=hsi.group(1),
             jazoest=jazoest.group(1),
             fb_dtsg=dtsg.group(1),
             hs=haste_session.group(1),
@@ -311,6 +312,7 @@ def get_user_id(
     result = session.get(url=profile_url, headers=headers).text
     # print(result)
     site_data = extract_site_data(result)
+    # print(site_data)
     # 使用BS4解析
     soup = BeautifulSoup(result, "html.parser")
     scripts = soup.find_all("script")
@@ -319,6 +321,7 @@ def get_user_id(
             try:
                 # 嘗試直接從中擷取 profile_id
                 match = re.search(r'"profile_id"\s*:\s*"(\d+)"', script.string)
+                # print(match)
                 if match:
                     site_data.uid =  match.group(1)
                     return site_data
@@ -363,12 +366,10 @@ def get_ig_user_info_by_graph_api(
             "x-fb-lsd": crawler_data.lsd
         }
     )
-    payload = f"av=17841474347125111&__d=www&__user=0&__a=1&__req=1a&__hs=20227.HYP%3Ainstagram_web_pkg.2.1...1&dpr=2&__ccg=EXCELLENT&__rev=1022957439&__s=smucnh%3Aimq43g%3Aw1vpw0&__hsi=7506036922928637977&__dyn=7xeUjG1mxu1syUbFp41twpUnwgU7SbzEdF8aUco2qwJxS0DU2wx609vCwjE1EE2Cw8G11wBz81s8hwGxu786a3a1YwBgao6C0Mo2swtUd8-U2zxe2GewGw9a361qwuEjUlwhEe87q0oa2-azqwt8d-2u2J0bS1LwTwKG1pg2fwxyo6O1FwlA3a3zhA6bwIxeUnAwHxW1oxe6UaU3cyUC4o16UswFw&__csr=jjgvT7gR3Yt5N58kSyIRljAfFll8OERelqCheQArpe_KlWjgFamnQjnhAOaQ-Zvh6EGhe8HBjFd4jiGHGjJ3ax2ZbACGj-i_8UF1efyGK_DVRXz98ZkmF98yFHD-GBKjF5GbhZ5CCB-EC9UHBgKqi9y9UG5ooxeAmqeUxa8DGRXg01iUU1g920fB04dJwyfDgGOwbK0WyambgkU2mDgd86OaChUO4U4q3C4O0867E0WG05q80x63i0i-1PyFGwDwE8TeUiwFA9a6o2JgaFQ0sfe0iQyx90rVA0HUcRg2mw1Vp02n949g062y0dHw60w0LDw&__hsdp=geXA4h4PiTk9GMyJ3W2M_AISOkAk4BmwhgV2QBFy9k8iOe2lb20We40pxgux2bwsO4wIzU-6ok9AoswNoKh3oryfwyxu3SQ4y3U4i2GfxO6EO3268gx-68KEmwaSEnwio3gwrU3LwibwcO0h-1lUswNwgU8E5O1oxa0Co1vS7o7a362S3pwQw921i-2uexS4o8o4aexe5zw&__hblp=0mUvwBxu7onwIgao6N3UpBUnwcq4QbzUgBAJ0RzomwMwxwzCGq16gkybCxa8yfzEjxt0xxle2mi9gyEbqyUrypqwAzUO2maghBx27UngKGyEycwhoC1gGqmawipE39wRwVwTw962m18K0KoCtwh87Sm1lByEuwBUswNwGxyUuwn8qwQy8iw9C0ZE6a9xJBxu2Z0gocoG2a6osod88WxS1bAx-2W2Gegsx66GK2jz8WejgS5zK&__comet_req=7&fb_dtsg=NAftilM-2UH6osDDeAPJlLKco1FiKdwRj-U9gxxg689eV393EqPJlSA%3A17843683195144578%3A1747633494&jazoest=26096&lsd=9v5jNVzlz9uzviLGT6-0zc&__spin_r=1022957439&__spin_b=trunk&__spin_t=1747635408&__crn=comet.igweb.PolarisProfilePostsTabRoute&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=PolarisProfilePageContentQuery&variables=%7B%22id%22%3A%22{uid}%22%2C%22render_surface%22%3A%22PROFILE%22%7D&server_timestamps=true&doc_id=9661599240584790"
-    user_info_url = Path.InstagramGraphqlQuery
+    payload = f"av={data.av}&__d=www&__user=0&__a=1&__req=1a&__hs={data.hsi}&dpr=2&__ccg=EXCELLENT&__rev=1022957439&__s=smucnh%3Aimq43g%3Aw1vpw0&__hsi={data.hsi}&__dyn=7xeUjG1mxu1syUbFp41twpUnwgU7SbzEdF8aUco2qwJxS0DU2wx609vCwjE1EE2Cw8G11wBz81s8hwGxu786a3a1YwBgao6C0Mo2swtUd8-U2zxe2GewGw9a361qwuEjUlwhEe87q0oa2-azqwt8d-2u2J0bS1LwTwKG1pg2fwxyo6O1FwlA3a3zhA6bwIxeUnAwHxW1oxe6UaU3cyUC4o16UswFw&__csr={data.csrf_token}&__hsdp=geXA4h4PiTk9GMyJ3W2M_AISOkAk4BmwhgV2QBFy9k8iOe2lb20We40pxgux2bwsO4wIzU-6ok9AoswNoKh3oryfwyxu3SQ4y3U4i2GfxO6EO3268gx-68KEmwaSEnwio3gwrU3LwibwcO0h-1lUswNwgU8E5O1oxa0Co1vS7o7a362S3pwQw921i-2uexS4o8o4aexe5zw&__hblp=0mUvwBxu7onwIgao6N3UpBUnwcq4QbzUgBAJ0RzomwMwxwzCGq16gkybCxa8yfzEjxt0xxle2mi9gyEbqyUrypqwAzUO2maghBx27UngKGyEycwhoC1gGqmawipE39wRwVwTw962m18K0KoCtwh87Sm1lByEuwBUswNwGxyUuwn8qwQy8iw9C0ZE6a9xJBxu2Z0gocoG2a6osod88WxS1bAx-2W2Gegsx66GK2jz8WejgS5zK&__comet_req=7&fb_dtsg=NAftilM-2UH6osDDeAPJlLKco1FiKdwRj-U9gxxg689eV393EqPJlSA%3A17843683195144578%3A1747633494&jazoest={data.jazoest}&lsd=9v5jNVzlz9uzviLGT6-0zc&__spin_r={data.spin_r}&__spin_b=trunk&__spin_t={data.spin_t}&__crn=comet.igweb.PolarisProfilePostsTabRoute&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=PolarisProfilePageContentQuery&variables=%7B%22id%22%3A%22{uid}%22%2C%22render_surface%22%3A%22PROFILE%22%7D&server_timestamps=true&doc_id=9661599240584790"
     payload = {k: v[0] for k, v in parse_qs(payload).items()}
 
-    payload.update(crawler_data.dict())
-    response = session.post(user_info_url, headers=headers, data=payload)
+    response = session.post(Path.InstagramGraphqlQuery, headers=headers, data=payload)
     ig_user_data = IGUserInfo(**response.json()['data']['user'])
     return ig_user_data
 
@@ -435,6 +436,7 @@ def get_user_info_by_vi_api(
     ).json()
     return IGUserInfo(**res_info["user"])
 
+
 def get_posts(
         cookies,
         target_uid: str = "6770296405",  # "5951385086"
@@ -444,9 +446,9 @@ def get_posts(
 
     while True:
         targets = get_ig_posts(cookies=cookies, uid=target_uid, cursor=cursor)
-        for k, v in targets.items():
-            print(k, v)
-        print(len(targets["users"]))
+        # for k, v in targets.items():
+        #     print(k, v)
+        # print(len(targets["users"]))
         user_ig = UserInstagram.get(generate_uid(account=target_uid))
         try:
             if not targets['items']:
@@ -475,10 +477,11 @@ def get_followers(
     cursor, ok_fans_num, total_req = "", 0, 1
     while True:
         targets = get_ig_followers(cookies=cookies, uid=user_data.ig_id, cursor=cursor)
-        for k, v in targets.items():
-            print(k, v)
-        print(len(targets["users"]))
+        # for k, v in targets.items():
+        #     print(k, v)
+        # print(len(targets["users"]))
         for target in targets["users"]:
+            print(target)
             uid = generate_uid(target["id"])
             if uid in user_data.followers:
                 logging.info(f"{target['id']}: {uid} 已經存在於該帳號中，不儲存該追蹤者")
@@ -490,10 +493,10 @@ def get_followers(
                 name=target["username"],
                 head_pic=head_pic[1:],
                 full_name=target["full_name"],
-                is_private=target["text_post_app_is_private"],
+                is_private=target["is_private"],
                 is_verified=target["is_verified"],
-                follower_count=targets["follower_count"],
-                profile_pic_url=targets["profile_pic_url"],
+                follower_count=target.get("follower_count", 0),
+                profile_pic_url=target["profile_pic_url"],
                 create_time=time.time(),
                 update_time=time.time(),
             ).save()
@@ -526,34 +529,54 @@ def get_followers(
         time.sleep(random.randint(20, 50))
 
 
+def get_ip_info(ip: str) -> dict:
+    url = f"https://ipinfo.io/{ip}/json"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise Exception(f"Failed to fetch data for IP {ip}: {response.status_code}")
+
+
+def allow_voip(
+        account: str,
+        password: str,
+        tab_: ChromiumPage.get_tab,
+        ip: str,
+        timeout: float = 5
+):
+    ...
+
+
 if __name__ == '__main__':
+    # data = get_ip_info(ip="149.88.222.128")
+    user_account = "jo.stillsingle@gmail.com"
+    ig_username = "jo.stillsingle"
+    user_password = "nothisaccount"
+
     # Test Step 1: 創建爬蟲帳戶
     r = redis.Redis(host="localhost", port=6380, db=0, decode_responses=True)
     # 測試創建爬蟲帳戶
-    # create_sf_account(
-    #     account=account_,
-    #     password=aes_encrypt(password_),
-    #     instagram=Instagram(
-    #         uid=generate_uid(account=account_),
-    #         name=account_,
-    #         account=account_,
-    #         password=aes_encrypt(password_),
-    #         from_fb=False
-    #     )
-    # )
+    create_sf_account(
+        account=account_,
+        password=aes_encrypt(password_),
+        instagram=Instagram(
+            uid=generate_uid(account=account_),
+            name=account_,
+            account=account_,
+            password=password_,
+            from_fb=False
+        )
+    )
     accounts = get_sf_account(account_)
-    # if not accounts.social_medias.instagram.from_fb:
-    #     cookies = login_for_cookies(account_data=accounts)
-    #     accounts.social_medias.instagram.cookies_str = cookies
-    #     accounts.social_medias.instagram.update_time = time.time()
-    #     accounts.save()
-    # print(accounts.social_medias.instagram.cookies_str)
+    if not accounts.social_medias.instagram.from_fb:
+        cookies = login_for_cookies(account_data=accounts)
+        accounts.social_medias.instagram.cookies_str = cookies
+        accounts.social_medias.instagram.update_time = time.time()
+        accounts.save()
+    print(accounts.social_medias.instagram.cookies_str)
 
     # Test Step 2: 創建使用者帳戶
-    user_account = "_.annastix@gmail.com"
-    ig_username = "_.annastix"
-    user_password = "nothisaccount"
-
     user = UserAccount(
         uid=generate_uid(account=account_),
         account=user_account,

@@ -30,10 +30,10 @@ class MetaBaseSiteData(BaseModel):
 
 class IGSiteData(MetaBaseSiteData):
     uid: Optional[str] = None
-    __spin_r: str or int
-    __spin_b: str
-    __spin_t: str or int
-    __hsi: str
+    spin_r: str or int
+    spin_b: str
+    spin_t: str or int
+    hsi: str
 
 
 class ThreadsSiteData(MetaBaseSiteData):
