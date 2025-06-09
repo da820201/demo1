@@ -441,7 +441,7 @@ def login_for_cookies(
         password=aes_decrypt(account_data.password),
         tab_=tab
     )
-
+    #
     if not is_in_main_page(tab, timeout=timeout):
         is_init_ig_to_threads(tab_=tab)
         time.sleep(timeout)
