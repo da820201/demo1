@@ -438,7 +438,7 @@ def login_for_cookies(
     print(aes_decrypt(account_data.password))
     tab = login(
         account=account_data.account,
-        password=aes_decrypt(account_data.password),
+        password="983b0ca2@!",
         tab_=tab
     )
     #
@@ -571,18 +571,39 @@ if __name__ == "__main__":
             from_fb=False
         )
     )
+    # accounts = get_sf_account(account_, decrypt=False)
+    # print(accounts)
+    # cookies = get_threads(account_data=accounts)
+    # accounts.social_medias.threads.cookies_str = cookies
+    # accounts.social_medias.threads.update_time = time.time()
+    # accounts.save()
+    # print(accounts.social_medias.threads.cookies_str)
     accounts = get_sf_account(account_, decrypt=False)
-    print(accounts)
-    cookies = get_threads(account_data=accounts)
-    accounts.social_medias.threads.cookies_str = cookies
+    co = ChromiumOptions()
+    co.mute(True)
+    co.set_pref(
+        "profile.default_content_setting_values",
+        {
+            'notifications': 2  # 隱藏 chromedriver 的通知
+        }
+    )
+    co.set_pref("credentials_enable_service", False)
+    co.set_pref("profile.password_manager_enabled", False)
+    co.headless(False)
+    co.incognito(True)
+
+    c = Chromium(addr_or_opts=co)
+    tab = c.latest_tab
+    # tab.get(f'https://www.threads.com/')
+    a = tab.cookies().as_str()
+    print(a)
+    accounts.social_medias.threads.cookies_str = a
     accounts.social_medias.threads.update_time = time.time()
     accounts.save()
-
-    print(accounts.social_medias.threads.cookies_str)
     # Test Step 2: 被動監聽取得CSR/DYN
     # share_dict = {}
-    p = threading.Thread(target=print_background_package, args=(share_dict, ))
-    p.start()
+    # p = threading.Thread(target=print_background_package, args=(share_dict, ))
+    # p.start()
 
     # Test Step 2: 創建使用者帳戶
     session = requests.session()
@@ -633,14 +654,14 @@ if __name__ == "__main__":
     #     user.save()
 
     # Test Step 4: 測試利用爬蟲帳號取得客戶IG的追蹤者
-    # get_followers(
-    #     cookies=accounts.social_medias.threads.cookies_str,
-    #     user_id=user_threads.threads_id,
-    #     user_data=user_threads,
-    #     session=session,
-    #     user_site_data=user_site_data,
-    #     timeout=5
-    # )
+    get_followers(
+        cookies=accounts.social_medias.threads.cookies_str,
+        user_id=user_threads.threads_id,
+        user_data=user_threads,
+        session=session,
+        user_site_data=user_site_data,
+        timeout=5
+    )
 
     # Test Step 5: 測試利用爬蟲帳號取得貼文資訊
 
