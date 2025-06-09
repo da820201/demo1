@@ -438,7 +438,7 @@ def login_for_cookies(
     print(aes_decrypt(account_data.password))
     tab = login(
         account=account_data.account,
-        password="983b0ca2",
+        password=aes_decrypt(account_data.password),
         tab_=tab
     )
 
